@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import Hero from "./components/Hero";
 import ProductModal from "./components/ProductModal";
+import { useAuthModal } from "./components/auth/AuthModalProvider";
 
 type ModalData = {
   title: string;
@@ -17,6 +18,10 @@ type Billing = "monthly" | "yearly";
 
 export default function Home() {
   const year = new Date().getFullYear();
+
+  // ✅ Use the same global modal as Nav (Neon-backed)
+  const { openAuthModal } = useAuthModal();
+  const handleEarlyAccess = () => openAuthModal();
 
   // -----------------------------
   // Product modal (Home only)
@@ -83,8 +88,79 @@ export default function Home() {
   return (
     <div id="top">
       <main>
-        {/* Hero: por ahora CTA va a Contact para canalizar early access */}
-        <Hero onRequestAccess={() => (window.location.href = "/contact")} />
+        {/* ✅ Hero CTA -> SAME modal as Nav */}
+        <Hero onRequestAccess={handleEarlyAccess} />
+
+        {/* Trust Proof Strip (Investor-grade, compact, safe) */}
+        <section className="bv-section bv-proof" aria-label="Trust proofs">
+          <div className="bv-container">
+            <div className="bv-card card" style={{ padding: 16 }}>
+              <div className="bv-sectionHead" style={{ marginBottom: 12 }}>
+                <h2 className="bv-h2" style={{ marginBottom: 6 }}>
+                  Trust you can prove.
+                </h2>
+                <p className="bv-p" style={{ marginBottom: 0 }}>
+                  BlockyVault pairs a clean vault experience with cryptographic proof receipts and privacy-first
+                  intelligence—so teams can demonstrate integrity without exposing secrets.
+                </p>
+              </div>
+
+              <div className="bv-grid3" style={{ marginTop: 12 }}>
+                <div className="bv-card card" style={{ padding: 14 }}>
+                  <div className="bv-cardTitle">Proof receipts</div>
+                  <div className="bv-cardDesc">
+                    Generate tamper-evident records for critical actions (share, export, policy change) to support audits
+                    and investigations.
+                  </div>
+                  <div className="bv-chipRow">
+                    <span className="bv-chip">Tamper-evident</span>
+                    <span className="bv-chip">Exportable</span>
+                    <span className="bv-chip">Audit-ready</span>
+                  </div>
+                </div>
+
+                <div className="bv-card card" style={{ padding: 14 }}>
+                  <div className="bv-cardTitle">Human-error reduction</div>
+                  <div className="bv-cardDesc">
+                    Adaptive prompts that nudge safer behavior—reducing accidental leaks and risky sharing patterns.
+                  </div>
+                  <div className="bv-chipRow">
+                    <span className="bv-chip">Risk signals</span>
+                    <span className="bv-chip">Guardrails</span>
+                    <span className="bv-chip">Safer workflows</span>
+                  </div>
+                </div>
+
+                <div className="bv-card card" style={{ padding: 14 }}>
+                  <div className="bv-cardTitle">Privacy-first by design</div>
+                  <div className="bv-cardDesc">
+                    Intelligence focused on metadata + behavior patterns—not reading your secrets. Minimize exposure while
+                    improving safety.
+                  </div>
+                  <div className="bv-chipRow">
+                    <span className="bv-chip">Minimal exposure</span>
+                    <span className="bv-chip">Zero surveillance</span>
+                    <span className="bv-chip">Trust-first</span>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                <button type="button" className="bv-btn bv-btn--primary" onClick={handleEarlyAccess}>
+                  Request early access
+                </button>
+
+                <Link className="bv-btn bv-btn--ghost" href="/investors">
+                  Investor overview
+                </Link>
+
+                <span className="bv-sub" style={{ marginTop: 0 }}>
+                  Built for audit-heavy teams: security, finance, legal, and regulated operators.
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
 
         {/* Why BlockyVault is different */}
         <section id="why" className="bv-section bv-why">
@@ -100,28 +176,7 @@ export default function Home() {
             <div className="bv-whyGrid">
               <div className="bv-whyCard card">
                 <div className="bv-whyTop">
-                  <div className="bv-miniIcon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M12 2l1.4 4.6L18 8l-4.6 1.4L12 14l-1.4-4.6L6 8l4.6-1.4L12 2Z"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M5 14l.9 2.9L9 18l-3.1 1.1L5 22l-.9-2.9L1 18l3.1-1.1L5 14Z"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M18 13l.9 2.9L22 17l-3.1 1.1L18 21l-.9-2.9L14 17l3.1-1.1L18 13Z"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </div>
+                  {/* no icons */}
                   <h3 className="bv-cardTitle">Adaptive Intelligence</h3>
                 </div>
 
@@ -139,23 +194,7 @@ export default function Home() {
 
               <div className="bv-whyCard card bv-whyCard--featured">
                 <div className="bv-whyTop">
-                  <div className="bv-miniIcon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M12 2L20 6V12C20 17 16.7 20.7 12 22C7.3 20.7 4 17 4 12V6L12 2Z"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M9.5 12.2L11.2 14L14.8 10.2"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </div>
+                  {/* no icons */}
                   <h3 className="bv-cardTitle">Cryptographic Proof</h3>
                 </div>
 
@@ -173,23 +212,7 @@ export default function Home() {
 
               <div className="bv-whyCard card">
                 <div className="bv-whyTop">
-                  <div className="bv-miniIcon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M12 12.5C14 12.5 15.6 10.9 15.6 8.9C15.6 6.9 14 5.3 12 5.3C10 5.3 8.4 6.9 8.4 8.9C8.4 10.9 10 12.5 12 12.5Z"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                      />
-                      <path
-                        d="M6 20.5C6.7 17.7 9.1 15.8 12 15.8C14.9 15.8 17.3 17.7 18 20.5"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                      />
-                      <path d="M20.5 7.5H18.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                      <path d="M20.5 11H17.2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                    </svg>
-                  </div>
+                  {/* no icons */}
                   <h3 className="bv-cardTitle">Human-First Security</h3>
                 </div>
 
@@ -206,18 +229,21 @@ export default function Home() {
               </div>
             </div>
 
+            {/* ✅ Clean CTA: one primary action + pricing as simple text link */}
             <div className="bv-whyCta card">
               <div className="bv-whyCta__left">
                 <div className="bv-whyCta__title">Built for teams that need provable security.</div>
-                <div className="bv-whyCta__sub">Join the Private Preview and get priority onboarding as we expand access.</div>
+                <div className="bv-whyCta__sub">
+                  Join the Private Preview and get priority onboarding as we expand access.{" "}
+                  <a href="#pricing" className="bv-link">
+                    See pricing
+                  </a>
+                </div>
               </div>
               <div className="bv-whyCta__right">
-                <Link className="bv-btn bv-btn--primary" href="/contact">
+                <button type="button" className="bv-btn bv-btn--primary" onClick={handleEarlyAccess}>
                   Request early access
-                </Link>
-                <a className="bv-btn bv-btn--ghost" href="#pricing">
-                  See pricing
-                </a>
+                </button>
               </div>
             </div>
           </div>
@@ -234,22 +260,7 @@ export default function Home() {
             <div className="bv-grid4">
               <button className="bv-card" type="button" onClick={() => openProductModal(productItems[0])}>
                 <div className="bv-cardTop">
-                  <div className="bv-miniIcon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M7 11V8.5C7 5.46 9.46 3 12.5 3C15.54 3 18 5.46 18 8.5V11"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                      />
-                      <path
-                        d="M6.5 11H18.5C19.6 11 20.5 11.9 20.5 13V19C20.5 20.1 19.6 21 18.5 21H6.5C5.4 21 4.5 20.1 4.5 19V13C4.5 11.9 5.4 11 6.5 11Z"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                      />
-                      <path d="M12.5 15V17.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                    </svg>
-                  </div>
+                  {/* no icons */}
                   <h3 className="bv-cardTitle">Encrypted Vault</h3>
                 </div>
 
@@ -263,16 +274,7 @@ export default function Home() {
 
               <button className="bv-card" type="button" onClick={() => openProductModal(productItems[1])}>
                 <div className="bv-cardTop">
-                  <div className="bv-miniIcon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M10.5 18C14.09 18 17 15.09 17 11.5C17 7.91 14.09 5 10.5 5C6.91 5 4 7.91 4 11.5C4 15.09 6.91 18 10.5 18Z"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                      />
-                      <path d="M20 20L16.8 16.8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                    </svg>
-                  </div>
+                  {/* no icons */}
                   <h3 className="bv-cardTitle">Fast Search</h3>
                 </div>
 
@@ -286,33 +288,7 @@ export default function Home() {
 
               <button className="bv-card" type="button" onClick={() => openProductModal(productItems[2])}>
                 <div className="bv-cardTop">
-                  <div className="bv-miniIcon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M16.5 21C16.5 18.79 14.04 17 11 17C7.96 17 5.5 18.79 5.5 21"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                      />
-                      <path
-                        d="M11 14C12.93 14 14.5 12.43 14.5 10.5C14.5 8.57 12.93 7 11 7C9.07 7 7.5 8.57 7.5 10.5C7.5 12.43 9.07 14 11 14Z"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                      />
-                      <path
-                        d="M18.5 21C18.5 19.7 17.55 18.57 16.1 18.04"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                      />
-                      <path
-                        d="M15.8 7.35C16.6 7.86 17.1 8.77 17.1 9.8C17.1 10.83 16.6 11.74 15.8 12.25"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                  </div>
+                  {/* no icons */}
                   <h3 className="bv-cardTitle">Sharing Controls</h3>
                 </div>
 
@@ -326,19 +302,7 @@ export default function Home() {
 
               <button className="bv-card" type="button" onClick={() => openProductModal(productItems[3])}>
                 <div className="bv-cardTop">
-                  <div className="bv-miniIcon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none">
-                      <path d="M12 3V14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                      <path
-                        d="M8 10L12 14L16 10"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <path d="M5 21H19" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                    </svg>
-                  </div>
+                  {/* no icons */}
                   <h3 className="bv-cardTitle">Export Anytime</h3>
                 </div>
 
@@ -419,9 +383,10 @@ export default function Home() {
 
                 <div className="bv-priceSub">{isYearly ? "Billed annually." : "Billed monthly."}</div>
 
-                <Link className="bv-btn bv-btn--ghost bv-btnFull" href="/contact">
+                {/* ✅ Keep consistent: open Neon modal */}
+                <button type="button" className="bv-btn bv-btn--ghost bv-btnFull" onClick={handleEarlyAccess}>
                   Choose Starter
-                </Link>
+                </button>
               </div>
 
               <div className="bv-card card bv-card--featured">
@@ -457,9 +422,10 @@ export default function Home() {
                   {isYearly ? "Billed annually. Includes priority onboarding." : "Billed monthly. Upgrade anytime."}
                 </div>
 
-                <Link className="bv-btn bv-btn--primary bv-btnFull" href="/contact">
+                {/* ✅ Keep consistent: open Neon modal */}
+                <button type="button" className="bv-btn bv-btn--primary bv-btnFull" onClick={handleEarlyAccess}>
                   Choose Team
-                </Link>
+                </button>
               </div>
 
               <div className="bv-card card">
@@ -489,9 +455,10 @@ export default function Home() {
 
                 <div className="bv-priceSub">We’ll tailor it to your requirements.</div>
 
-                <Link className="bv-btn bv-btn--ghost bv-btnFull" href="/contact">
+                {/* ✅ Keep funnel: open Neon modal */}
+                <button type="button" className="bv-btn bv-btn--ghost bv-btnFull" onClick={handleEarlyAccess}>
                   Contact Sales
-                </Link>
+                </button>
               </div>
             </div>
           </div>
@@ -564,23 +531,27 @@ export default function Home() {
                 </div>
               </Link>
 
-              <Link className="bv-card card" href="/contact">
+              {/* ✅ Keep funnel: open Neon modal instead of /contact */}
+              <button type="button" className="bv-card card" onClick={handleEarlyAccess}>
                 <div className="bv-cardTitle">Contact Us</div>
                 <div className="bv-cardDesc">Early access, partnerships, and support.</div>
                 <div className="bv-chipRow">
                   <span className="bv-chip">Email</span>
                   <span className="bv-chip">Preview</span>
                 </div>
-              </Link>
+              </button>
             </div>
 
             <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <Link className="bv-btn bv-btn--primary" href="/contact">
+              {/* ✅ Keep consistent: open Neon modal */}
+              <button type="button" className="bv-btn bv-btn--primary" onClick={handleEarlyAccess}>
                 Request early access
-              </Link>
-              <Link className="bv-btn bv-btn--ghost" href="/contact">
+              </button>
+
+              {/* Optional: keep /contact, but it breaks funnel. Prefer modal for MVP */}
+              <button type="button" className="bv-btn bv-btn--ghost" onClick={handleEarlyAccess}>
                 Contact us
-              </Link>
+              </button>
             </div>
 
             <div className="bv-sub" style={{ marginTop: 10 }}>
@@ -597,7 +568,11 @@ export default function Home() {
               <Link href="/about">About</Link>
               <Link href="/team">Team</Link>
               <Link href="/investors">Investors</Link>
-              <Link href="/contact">Contact</Link>
+
+              {/* ✅ Keep funnel: open modal instead of /contact */}
+              <button type="button" className="bv-linkBtn" onClick={handleEarlyAccess}>
+                Contact
+              </button>
             </span>
           </div>
         </footer>

@@ -11,6 +11,7 @@ type Row = {
   source: string | null;
   created_at: string; // ISO string
   approved_at: string | null; // ISO string | null
+  account_type: string | null;
 };
 
 function formatDate(iso: string | null | undefined) {
@@ -190,11 +191,12 @@ export default function AdminWaitlistPage() {
 
   const [q, setQ] = useState("");
   const [limit, setLimit] = useState(100);
+  const [accountType, setAccountType] = useState<"all" | "individual" | "private_corp" | "government">("all");
 
   const [rowBusy, setRowBusy] = useState<Record<string, boolean>>({});
   const [toast, setToast] = useState<string | null>(null);
 
-  const queryKey = useMemo(() => `${q}::${limit}`, [q, limit]);
+  const queryKey = useMemo(() => `${q}::${limit}::${accountType}`, [q, limit, accountType]);
 
   async function load() {
     setLoading(true);
@@ -204,10 +206,10 @@ export default function AdminWaitlistPage() {
       const params = new URLSearchParams();
       if (q.trim()) params.set("q", q.trim());
       params.set("limit", String(limit));
+      if (accountType !== "all") params.set("accountType", accountType);
 
       const res = await fetch(`/api/admin/waitlist?${params.toString()}`, { cache: "no-store" });
 
-      // ✅ Si no estás logueado, te manda al login (en vez de error feo)
       if (res.status === 401) {
         redirectToLogin();
         return;
@@ -261,7 +263,6 @@ export default function AdminWaitlistPage() {
         body: JSON.stringify({ email, approve }),
       });
 
-      // ✅ si expira sesión o no estás logueado → login
       if (res.status === 401) {
         redirectToLogin();
         return;
@@ -279,8 +280,27 @@ export default function AdminWaitlistPage() {
     }
   }
 
+  function exportFile(kind: "csv" | "xlsx") {
+    const params = new URLSearchParams();
+    if (q.trim()) params.set("q", q.trim());
+    params.set("limit", String(limit));
+    if (accountType !== "all") params.set("accountType", accountType);
+    params.set("format", kind);
+
+    const url = `/api/admin/waitlist/export?${params.toString()}`;
+    window.open(url, "_blank");
+  }
+
   return (
-    <div style={{ padding: 24, maxWidth: 1260, margin: "0 auto", color: ui.text }}>
+    <div
+      style={{
+        padding: "24px 16px 40px",
+        maxWidth: 1260,
+        margin: "0 auto",
+        color: ui.text,
+      }}
+    >
+      {/* Header */}
       <div
         style={{
           display: "flex",
@@ -295,7 +315,7 @@ export default function AdminWaitlistPage() {
           <div style={{ opacity: 0.75, marginTop: 6 }}>Admin view (protected).</div>
         </div>
 
-        <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 12, alignItems: "flex-end", flexWrap: "wrap" }}>
           <div>
             <div style={{ fontSize: 12, opacity: 0.75, marginBottom: 6 }}>Search</div>
             <input
@@ -303,8 +323,8 @@ export default function AdminWaitlistPage() {
               onChange={(e) => setQ(e.target.value)}
               placeholder="email / name / phone / company"
               style={{
-                width: 360,
-                maxWidth: "min(360px, 90vw)",
+                width: 260,
+                maxWidth: "min(260px, 90vw)",
                 padding: "10px 12px",
                 borderRadius: 12,
                 border: `1px solid ${ui.border}`,
@@ -324,7 +344,7 @@ export default function AdminWaitlistPage() {
               min={1}
               max={500}
               style={{
-                width: 110,
+                width: 90,
                 padding: "10px 12px",
                 borderRadius: 12,
                 border: `1px solid ${ui.border}`,
@@ -335,18 +355,53 @@ export default function AdminWaitlistPage() {
             />
           </div>
 
-          <div style={{ marginTop: 18, display: "flex", gap: 10 }}>
-            <Button variant="ghost" onClick={() => load()}>
-              Refresh
-            </Button>
+          <div>
+            <div style={{ fontSize: 12, opacity: 0.75, marginBottom: 6 }}>Account type</div>
+            <select
+              value={accountType}
+              onChange={(e) => setAccountType(e.target.value as any)}
+              style={{
+                width: 150,
+                padding: "10px 12px",
+                borderRadius: 12,
+                border: `1px solid ${ui.border}`,
+                background: "rgba(255,255,255,0.06)",
+                color: ui.text,
+                outline: "none",
+                appearance: "none",
+              }}
+            >
+              <option value="all">All</option>
+              <option value="individual">Individual</option>
+              <option value="private_corp">Private corp</option>
+              <option value="government">Government</option>
+            </select>
+          </div>
 
-            <Button variant="ghost" onClick={logout}>
-              Logout
-            </Button>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: 8, marginTop: 18 }}>
+              <Button variant="ghost" onClick={() => load()}>
+                Refresh
+              </Button>
+
+              <Button variant="ghost" onClick={logout}>
+                Logout
+              </Button>
+            </div>
+
+            <div style={{ display: "flex", gap: 8, marginTop: 18 }}>
+              <Button variant="ghost" onClick={() => exportFile("csv")}>
+                Export CSV
+              </Button>
+              <Button variant="ghost" onClick={() => exportFile("xlsx")}>
+                Export XLSX
+              </Button>
+            </div>
           </div>
         </div>
       </div>
 
+      {/* Toast */}
       {toast ? (
         <div
           style={{
@@ -364,6 +419,7 @@ export default function AdminWaitlistPage() {
         </div>
       ) : null}
 
+      {/* Content */}
       <div style={{ marginTop: 18 }}>
         {loading ? (
           <div style={{ padding: 14, borderRadius: 14, background: ui.card, border: `1px solid ${ui.border}` }}>
@@ -381,38 +437,155 @@ export default function AdminWaitlistPage() {
             <b>Error:</b> {error}
           </div>
         ) : (
-          <div style={{ overflowX: "auto", border: `1px solid ${ui.border}`, borderRadius: 16, background: ui.card }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ background: "rgba(255,255,255,0.05)" }}>
-                  <th style={th}>Created</th>
-                  <th style={th}>Status</th>
-                  <th style={th}>Email</th>
-                  <th style={th}>Full name</th>
-                  <th style={th}>Phone</th>
-                  <th style={th}>Company</th>
-                  <th style={th}>Source</th>
-                  <th style={th}>Action</th>
-                </tr>
-              </thead>
+          <>
+            {/* Desktop table */}
+            <div className="bv-admin-waitlist-table-desktop">
+              <div
+                style={{
+                  border: `1px solid ${ui.border}`,
+                  borderRadius: 16,
+                  background: ui.card,
+                  overflowX: "auto",
+                }}
+              >
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr style={{ background: "rgba(255,255,255,0.05)" }}>
+                      <th style={th}>Created</th>
+                      <th style={th}>Status</th>
+                      <th style={th}>Email</th>
+                      <th style={th}>Full name</th>
+                      <th style={th}>Phone</th>
+                      <th style={th}>Account type</th>
+                      <th style={th}>Company</th>
+                      <th style={th}>Source</th>
+                      <th style={th}>Action</th>
+                    </tr>
+                  </thead>
 
-              <tbody>
-                {rows.length === 0 ? (
-                  <tr>
-                    <td style={td} colSpan={8}>
-                      No rows found.
-                    </td>
-                  </tr>
-                ) : (
-                  rows.map((r) => {
+                  <tbody>
+                    {rows.length === 0 ? (
+                      <tr>
+                        <td style={td} colSpan={9}>
+                          No rows found.
+                        </td>
+                      </tr>
+                    ) : (
+                      rows.map((r) => {
+                        const approved = !!r.approved_at;
+                        const busy = !!rowBusy[r.id];
+
+                        return (
+                          <tr key={r.id} style={{ borderTop: `1px solid ${ui.border}` }}>
+                            <td style={td}>{formatDate(r.created_at)}</td>
+
+                            <td style={td}>
+                              <span style={badgeStyle(approved)}>
+                                <span
+                                  aria-hidden="true"
+                                  style={{
+                                    width: 8,
+                                    height: 8,
+                                    borderRadius: 999,
+                                    background: approved ? "rgba(26,255,168,1)" : "rgba(255,255,255,0.35)",
+                                    display: "inline-block",
+                                  }}
+                                />
+                                {approved ? "Approved" : "Pending"}
+                              </span>
+
+                              {approved ? (
+                                <div style={{ fontSize: 12, opacity: 0.75, marginTop: 6 }}>
+                                  {formatDate(r.approved_at)}
+                                </div>
+                              ) : null}
+                            </td>
+
+                            <td style={td}>
+                              <span
+                                style={{
+                                  fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+                                }}
+                              >
+                                {r.email}
+                              </span>
+                            </td>
+
+                            <td style={td}>{r.full_name ?? "-"}</td>
+                            <td style={td}>{r.phone ?? "-"}</td>
+                            <td style={td}>{r.account_type ?? "-"}</td>
+                            <td style={td}>{r.company ?? "-"}</td>
+                            <td style={td}>{r.source ?? "-"}</td>
+
+                            <td style={td}>
+                              {approved ? (
+                                <Button
+                                  variant="revoke"
+                                  disabled={busy}
+                                  onClick={() => setApproved(r.email, false, r.id)}
+                                >
+                                  {busy ? "Working…" : "Revoke"}
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="approve"
+                                  disabled={busy}
+                                  onClick={() => setApproved(r.email, true, r.id)}
+                                >
+                                  {busy ? "Approving…" : "Approve"}
+                                </Button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Mobile cards */}
+            <div className="bv-admin-waitlist-table-mobile">
+              {rows.length === 0 ? (
+                <div
+                  style={{
+                    padding: 14,
+                    borderRadius: 14,
+                    background: ui.card,
+                    border: `1px solid ${ui.border}`,
+                  }}
+                >
+                  No rows found.
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {rows.map((r) => {
                     const approved = !!r.approved_at;
                     const busy = !!rowBusy[r.id];
 
                     return (
-                      <tr key={r.id} style={{ borderTop: `1px solid ${ui.border}` }}>
-                        <td style={td}>{formatDate(r.created_at)}</td>
-
-                        <td style={td}>
+                      <div
+                        key={r.id}
+                        style={{
+                          borderRadius: 14,
+                          border: `1px solid ${ui.border}`,
+                          background: ui.card,
+                          padding: 12,
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 8,
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            gap: 8,
+                          }}
+                        >
+                          <div style={{ fontWeight: 700, fontSize: 14 }}>{r.full_name ?? r.email}</div>
                           <span style={badgeStyle(approved)}>
                             <span
                               aria-hidden="true"
@@ -426,39 +599,77 @@ export default function AdminWaitlistPage() {
                             />
                             {approved ? "Approved" : "Pending"}
                           </span>
+                        </div>
 
+                        <div style={{ fontSize: 12, opacity: 0.75 }}>{formatDate(r.created_at)}</div>
+
+                        <div style={{ fontSize: 13, marginTop: 4, display: "grid", rowGap: 4 }}>
+                          <div>
+                            <span style={{ opacity: 0.7 }}>Email: </span>
+                            <span
+                              style={{
+                                fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+                              }}
+                            >
+                              {r.email}
+                            </span>
+                          </div>
+                          <div>
+                            <span style={{ opacity: 0.7 }}>Phone: </span>
+                            <span>{r.phone ?? "-"}</span>
+                          </div>
+                          <div>
+                            <span style={{ opacity: 0.7 }}>Account: </span>
+                            <span>{r.account_type ?? "-"}</span>
+                          </div>
+                          <div>
+                            <span style={{ opacity: 0.7 }}>Company: </span>
+                            <span>{r.company ?? "-"}</span>
+                          </div>
+                          <div>
+                            <span style={{ opacity: 0.7 }}>Source: </span>
+                            <span>{r.source ?? "-"}</span>
+                          </div>
+                          {approved && (
+                            <div>
+                              <span style={{ opacity: 0.7 }}>Approved at: </span>
+                              <span>{formatDate(r.approved_at)}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div
+                          style={{
+                            marginTop: 8,
+                            display: "flex",
+                            justifyContent: "flex-end",
+                          }}
+                        >
                           {approved ? (
-                            <div style={{ fontSize: 12, opacity: 0.75, marginTop: 6 }}>{formatDate(r.approved_at)}</div>
-                          ) : null}
-                        </td>
-
-                        <td style={td}>
-                          <span style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}>{r.email}</span>
-                        </td>
-
-                        <td style={td}>{r.full_name ?? "-"}</td>
-                        <td style={td}>{r.phone ?? "-"}</td>
-                        <td style={td}>{r.company ?? "-"}</td>
-                        <td style={td}>{r.source ?? "-"}</td>
-
-                        <td style={td}>
-                          {approved ? (
-                            <Button variant="revoke" disabled={busy} onClick={() => setApproved(r.email, false, r.id)}>
+                            <Button
+                              variant="revoke"
+                              disabled={busy}
+                              onClick={() => setApproved(r.email, false, r.id)}
+                            >
                               {busy ? "Working…" : "Revoke"}
                             </Button>
                           ) : (
-                            <Button variant="approve" disabled={busy} onClick={() => setApproved(r.email, true, r.id)}>
+                            <Button
+                              variant="approve"
+                              disabled={busy}
+                              onClick={() => setApproved(r.email, true, r.id)}
+                            >
                               {busy ? "Approving…" : "Approve"}
                             </Button>
                           )}
-                        </td>
-                      </tr>
+                        </div>
+                      </div>
                     );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
+                  })}
+                </div>
+              )}
+            </div>
+          </>
         )}
       </div>
     </div>

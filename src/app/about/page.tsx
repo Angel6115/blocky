@@ -1,7 +1,13 @@
 // src/app/about/page.tsx
+"use client";
+
 import Link from "next/link";
+import { useAuthModal } from "../components/auth/AuthModalProvider";
 
 export default function AboutPage() {
+  const { openAuthModal } = useAuthModal();
+  const handleEarlyAccess = () => openAuthModal();
+
   return (
     <main>
       <section className="bv-section">
@@ -62,25 +68,30 @@ export default function AboutPage() {
             <div className="bv-card card">
               <div className="bv-cardTitle">Private Preview</div>
               <div className="bv-cardDesc">
-                We’re onboarding intentionally to protect quality and security. Early access is limited while we
-                harden the platform.
+                We’re onboarding intentionally to protect quality and security. Early access is limited while we harden
+                the platform.
               </div>
             </div>
           </div>
 
           <div style={{ marginTop: 18, display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <Link className="bv-btn bv-btn--primary" href="/">
+            <Link className="bv-btn bv-btn--ghost" href="/">
               Back to Home
             </Link>
-            <Link className="bv-btn bv-btn--ghost" href="/team">
-              Join our team
-            </Link>
+
             <Link className="bv-btn" href="/investors">
               Investor overview
             </Link>
-            <Link className="bv-btn" href="/contact">
+
+            {/* ✅ Funnel: open Neon modal */}
+            <button type="button" className="bv-btn bv-btn--primary" onClick={handleEarlyAccess}>
+              Request early access
+            </button>
+
+            {/* ✅ Funnel-safe contact */}
+            <button type="button" className="bv-btn" onClick={handleEarlyAccess}>
               Contact
-            </Link>
+            </button>
           </div>
 
           <div className="bv-sub" style={{ marginTop: 12 }}>

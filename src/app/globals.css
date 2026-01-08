@@ -2538,3 +2538,162 @@ img, svg{
 .bv-container{
   width: 100%;
 }
+.bv-linkBtn {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  font: inherit;
+}
+.bv-link {
+  text-decoration: underline;
+}
+/* ===== FINAL OVERRIDES (keep stable) ===== */
+
+/* Container back to intended max width */
+.bv-container{
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 0 24px;
+  width: 100%;
+}
+
+/* Single source of truth for section spacing */
+.bv-section{
+  padding: 60px 0;
+}
+@media (max-width: 980px){
+  .bv-section{ padding: 48px 0; }
+}
+
+/* Trust strip polish (used in hero or near footer) */
+.bv-strip{
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.18);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 18px 70px rgba(0,0,0,.25);
+}
+/* =========================
+   BlockyVault Modal (Global)
+   ========================= */
+
+   .bv-modal__overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(0, 0, 0, 0.62);
+    backdrop-filter: blur(10px);
+  }
+  
+  .bv-modal__panel {
+    width: min(720px, 100%);
+    max-height: min(84vh, 760px);
+    overflow: auto;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    background: rgba(12, 12, 14, 0.92);
+    box-shadow: 0 20px 80px rgba(0, 0, 0, 0.55);
+    padding: 18px;
+  }
+  
+  .bv-modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  
+  .bv-modal__title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.92);
+  }
+  
+  .bv-modal__sub {
+    margin: 12px 0 14px;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  
+  .bv-icon-btn {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.85);
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    padding: 8px;
+    border-radius: 10px;
+  }
+  
+  .bv-icon-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+  
+  .bv-modal__form {
+    display: grid;
+    gap: 12px;
+  }
+  
+  .bv-field {
+    display: grid;
+    gap: 6px;
+  }
+  
+  .bv-field > span {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.75);
+  }
+  
+  .bv-field input,
+  .bv-field select {
+    width: 100%;
+    height: 42px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.92);
+    padding: 0 12px;
+    outline: none;
+  }
+  
+  .bv-field input::placeholder {
+    color: rgba(255, 255, 255, 0.45);
+  }
+  
+  .bv-field input:focus,
+  .bv-field select:focus {
+    border-color: rgba(255, 255, 255, 0.22);
+  }
+  
+  .bv-modal__actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    margin-top: 6px;
+  }
+  
+  .bv-alert {
+    border-radius: 12px;
+    padding: 10px 12px;
+    background: rgba(255, 80, 80, 0.12);
+    border: 1px solid rgba(255, 80, 80, 0.22);
+    color: rgba(255, 255, 255, 0.92);
+  }
+  .bv-modal__panel{
+    background: radial-gradient(1200px 600px at 80% 30%, rgba(255,122,0,0.10), transparent 40%),
+                rgba(12,12,14,0.92);
+  }
+  

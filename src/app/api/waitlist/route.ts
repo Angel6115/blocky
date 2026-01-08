@@ -119,6 +119,11 @@ export async function POST(req: Request) {
 
     const source = String(body?.source ?? "modal").trim() || "modal";
 
+    // 🔹 Account type (nuevo)
+    const accountTypeRaw = String(body?.accountType ?? "").trim().toLowerCase();
+    const allowedAccountTypes = new Set(["individual", "private_corp", "government"]);
+    const account_type = allowedAccountTypes.has(accountTypeRaw) ? accountTypeRaw : "individual";
+
     // -----------------------
     // Validation (friendly)
     // -----------------------
@@ -140,13 +145,14 @@ export async function POST(req: Request) {
     // Insert / Upsert
     // -----------------------
     await sql`
-      insert into waitlist (email, company, full_name, phone, source)
-      values (${email}, ${company}, ${fullName}, ${phone}, ${source})
+      insert into waitlist (email, company, full_name, phone, source, account_type)
+      values (${email}, ${company}, ${fullName}, ${phone}, ${source}, ${account_type})
       on conflict (email) do update
       set
         company = coalesce(excluded.company, waitlist.company),
         full_name = excluded.full_name,
-        phone = excluded.phone
+        phone = excluded.phone,
+        account_type = excluded.account_type
     `;
 
     return NextResponse.json({ ok: true });

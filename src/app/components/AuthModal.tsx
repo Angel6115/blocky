@@ -1,467 +1,447 @@
+// src/app/components/AuthModal.tsx
 "use client";
 
-import { useEffect, useId, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
-type Mode = "signin" | "create";
-type Step = "email" | "verify" | "done";
+type AuthMode = "signin" | "create";
 
 type Props = {
   open: boolean;
-  mode: Mode;
+  mode: AuthMode;
   onClose: () => void;
-  onWaitlisted: (email: string) => void;
+  onWaitlisted?: (email: string) => void;
 };
 
+type AccountType = "individual" | "private_corp" | "government";
+
+function isValidEmail(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 export default function AuthModal({ open, mode, onClose, onWaitlisted }: Props) {
-  const titleId = useId();
+  const [authMode, setAuthMode] = useState<AuthMode>(mode);
 
-  const [activeMode, setActiveMode] = useState<Mode>(mode);
-  const [step, setStep] = useState<Step>("email");
-
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
+  // Form fields (create)
   const [fullName, setFullName] = useState("");
   const [company, setCompany] = useState("");
-  const [accepted, setAccepted] = useState(false);
+  const [phone, setPhone] = useState("");
+  const [accountType, setAccountType] = useState<AccountType>("individual");
+  const [email, setEmail] = useState("");
 
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
+  // Terms checkbox (MVP gate)
+  const [agree, setAgree] = useState(true);
 
-  // Used to show inline required-field feedback
-  const [touched, setTouched] = useState(false);
+  // Honeypot (anti-bot)
+  const [hp, setHp] = useState("");
 
-  // Honeypot (bots will often fill it)
-  const [website, setWebsite] = useState("");
+  // UI state
+  const [submitting, setSubmitting] = useState(false);
+  const [done, setDone] = useState(false);
+  const [err, setErr] = useState("");
 
-  const isValidEmail = useMemo(() => {
-    const e = email.trim();
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
-  }, [email]);
+  // Sync mode when opens
+  useEffect(() => {
+    if (!open) return;
+    setAuthMode(mode);
+    setDone(false);
+    setErr("");
+    setSubmitting(false);
+    setHp("");
+    // no limpiamos campos automáticamente para que se sienta “premium”
+    // (pero si quieres, lo activamos)
+  }, [open, mode]);
 
-  const canContinue = useMemo(() => {
-    if (!isValidEmail) return false;
-
-    if (activeMode === "create") {
-      if (!fullName.trim()) return false;
-      if (!phone.trim()) return false;
-      if (!accepted) return false;
-    }
-
-    return true;
-  }, [isValidEmail, activeMode, accepted, fullName, phone]);
-
-  const showErrors = touched && activeMode === "create" && step === "email";
-  const fullNameError = showErrors && !fullName.trim();
-  const phoneError = showErrors && !phone.trim();
-  const emailError = showErrors && !isValidEmail;
-  const termsError = showErrors && !accepted;
-
-  // Sync external mode when modal opens
+  // Lock scroll + ESC
   useEffect(() => {
     if (!open) return;
 
-    setActiveMode(mode);
-    setStep("email");
-    setMsg(null);
-    setLoading(false);
-    setTouched(false);
-
-    // reset terms + honeypot each time create is opened
-    if (mode === "create") setAccepted(false);
-    setWebsite("");
-
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeAndReset();
     };
-    window.addEventListener("keydown", onKey);
 
-    const prev = document.body.style.overflow;
+    document.addEventListener("keydown", onKeyDown);
     document.body.style.overflow = "hidden";
 
     return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = "";
     };
-  }, [open, mode, onClose]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
-  const markTouched = () => {
-    // Only show errors for create mode on the email step
-    if (activeMode === "create" && step === "email") setTouched(true);
+  const canSubmit = useMemo(() => {
+    if (submitting) return false;
+    if (!agree) return false;
+
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !isValidEmail(cleanEmail)) return false;
+    if (!fullName.trim()) return false;
+    if (!phone.trim()) return false;
+
+    return true;
+  }, [agree, email, fullName, phone, submitting]);
+
+  const resetForm = () => {
+    setFullName("");
+    setCompany("");
+    setPhone("");
+    setAccountType("individual");
+    setEmail("");
+    setAgree(true);
+    setHp("");
+    setErr("");
+    setSubmitting(false);
+    setDone(false);
+    setAuthMode(mode);
   };
 
-  const goVerify = async () => {
-    // If button is enabled, we can still mark touched for consistency
-    markTouched();
+  const closeAndReset = () => {
+    resetForm();
+    onClose();
+  };
 
-    if (!canContinue) {
-      setMsg("Please complete the required fields to continue.");
+  async function submitWaitlist(e: React.FormEvent) {
+    e.preventDefault();
+    setErr("");
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (!agree) {
+      setErr("Please agree to the Terms & Privacy to continue.");
+      return;
+    }
+    if (!isValidEmail(cleanEmail)) {
+      setErr("Please enter a valid email.");
+      return;
+    }
+    if (!fullName.trim()) {
+      setErr("Full name is required.");
+      return;
+    }
+    if (!phone.trim()) {
+      setErr("Phone is required.");
       return;
     }
 
-    setLoading(true);
-    setMsg(null);
-
-    // Demo: simulate link send (UI only)
-    await new Promise((r) => setTimeout(r, 650));
-
-    setLoading(false);
-    setStep("verify");
-
-    const e = email.trim();
-    const isCreate = activeMode === "create";
-
-    const nameLine = isCreate && fullName.trim() ? `Thanks, ${fullName.trim()}. ` : "";
-    const companyLine = isCreate && company.trim() ? `Company: ${company.trim()}. ` : "";
-
-    setMsg(
-      isCreate
-        ? `${nameLine}${companyLine}You’re joining the Private Preview waitlist. We sent a verification link to ${e}. (Demo) Click “I verified” to complete your request.`
-        : `We sent a secure sign-in link to ${e}. (Demo) Click “I verified” to continue.`
-    );
-  };
-
-  // ✅ Real insert for waitlist (Neon) when mode=create
-  const insertWaitlist = async () => {
-    // Honeypot check (silent success to avoid tipping bots)
-    if (website.trim()) {
-      return; // do nothing (pretend success)
-    }
-
-    const e = email.trim().toLowerCase();
-    const c = company.trim();
-
-    const res = await fetch("/api/waitlist", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: e,
-        company: c || null,
-        fullName: fullName.trim() || null,
-        phone: phone.trim() || null,
-        source: "modal",
-        hp: website.trim() || null,
-      }),
-    });
-
-    const data = await res.json().catch(() => ({} as any));
-
-    if (!res.ok || !data?.ok) {
-      throw new Error(data?.error || "Server error");
-    }
-  };
-
-  const verified = async () => {
-    setLoading(true);
-    setMsg(null);
+    setSubmitting(true);
 
     try {
-      // ✅ Only create mode writes to Neon waitlist
-      if (activeMode === "create") {
-        await insertWaitlist();
-        onWaitlisted(email.trim());
+      const res = await fetch("/api/waitlist", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          email: cleanEmail,
+          company: company.trim() || null,
+          fullName: fullName.trim(),
+          phone: phone.trim(),
+          accountType,
+          source: "modal",
+          hp,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({} as any));
+
+      if (!res.ok || !data?.ok) {
+        setErr(data?.error || "Something went wrong. Please try again.");
+        setSubmitting(false);
+        return;
       }
 
-      // small UX delay (optional)
-      await new Promise((r) => setTimeout(r, 250));
-
-      setLoading(false);
-      setStep("done");
-
-      if (activeMode === "create") {
-        setMsg("You’re on the Private Preview waitlist. We’ll notify you when your access is approved.");
-      } else {
-        // still demo for signin
-        setMsg("Signed in successfully. (Demo)");
-      }
-    } catch (err: any) {
-      setLoading(false);
-      // bring user back so they can retry
-      setStep("verify");
-      setMsg(`Couldn’t complete your request: ${err?.message || "Server error"}`);
+      setDone(true);
+      onWaitlisted?.(cleanEmail);
+      setSubmitting(false);
+    } catch {
+      setErr("Network error. Please try again.");
+      setSubmitting(false);
     }
-  };
-
-  const closeAndReset = () => onClose();
-
-  const switchMode = (m: Mode) => {
-    setActiveMode(m);
-    setMsg(null);
-    setLoading(false);
-    setStep("email");
-    setTouched(false);
-    if (m === "create") setAccepted(false);
-    setWebsite("");
-  };
-
-  const back = () => {
-    setMsg(null);
-    setLoading(false);
-    setStep("email");
-    setTouched(false);
-  };
-
-  const headline = activeMode === "signin" ? "Sign in" : "Request early access";
-  const subline =
-    step === "email"
-      ? activeMode === "signin"
-        ? "Enter your email to receive a secure sign-in link."
-        : "Private Preview is limited. Request access with a verification link—no password required."
-      : step === "verify"
-      ? "Check your inbox for the verification link."
-      : "Request received.";
+  }
 
   if (!open) return null;
 
   return (
-    <div className="bv-modalOverlay" role="presentation" onMouseDown={closeAndReset}>
-      <div
-        className="bv-modal bv-modal--enter"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        onMouseDown={(e) => e.stopPropagation()}
-      >
-        <div className="bv-modalTop">
-          <div>
-            <div className="bv-modalKicker">BlockyVault • Private Preview</div>
-            <h3 id={titleId} className="bv-modalTitle">
-              {headline}
-            </h3>
-            <div className="bv-modalSub">{subline}</div>
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="bv-modal__overlay"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) closeAndReset();
+      }}
+    >
+      <div className="bv-modal__panel">
+        {/* Header */}
+        <div className="bv-modal__header">
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <div style={{ fontSize: 12, opacity: 0.8 }}>
+              BlockyVault • <span style={{ opacity: 0.9 }}>Private Preview</span>
+            </div>
+            <h2 className="bv-modal__title" style={{ margin: 0 }}>
+              {authMode === "signin" ? "Sign in" : "Request early access"}
+            </h2>
           </div>
 
-          <button type="button" className="bv-x" onClick={closeAndReset} aria-label="Close">
-            <span aria-hidden="true">✕</span>
+          <button type="button" className="bv-icon-btn" onClick={closeAndReset} aria-label="Close modal">
+            ✕
           </button>
         </div>
 
-        <div className="bv-authTabs" role="tablist" aria-label="Authentication mode">
+        {/* Tabs */}
+        <div
+          style={{
+            display: "flex",
+            gap: 10,
+            marginTop: 12,
+            padding: 6,
+            borderRadius: 999,
+            background: "rgba(255,255,255,0.06)",
+            border: "1px solid rgba(255,255,255,0.10)",
+          }}
+          role="tablist"
+          aria-label="Auth mode"
+        >
           <button
             type="button"
-            role="tab"
-            className={activeMode === "signin" ? "bv-authTab bv-authTab--active" : "bv-authTab"}
-            aria-selected={activeMode === "signin"}
-            onClick={() => switchMode("signin")}
+            onClick={() => setAuthMode("signin")}
+            aria-pressed={authMode === "signin"}
+            style={{
+              flex: 1,
+              height: 40,
+              borderRadius: 999,
+              border: 0,
+              cursor: "pointer",
+              fontWeight: 700,
+              background: authMode === "signin" ? "rgba(255,255,255,0.10)" : "transparent",
+              color: "rgba(255,255,255,0.90)",
+            }}
           >
             Sign in
           </button>
+
           <button
             type="button"
-            role="tab"
-            className={activeMode === "create" ? "bv-authTab bv-authTab--active" : "bv-authTab"}
-            aria-selected={activeMode === "create"}
-            onClick={() => switchMode("create")}
+            onClick={() => setAuthMode("create")}
+            aria-pressed={authMode === "create"}
+            style={{
+              flex: 1,
+              height: 40,
+              borderRadius: 999,
+              border: 0,
+              cursor: "pointer",
+              fontWeight: 700,
+              background: authMode === "create" ? "rgba(255,255,255,0.10)" : "transparent",
+              color: "rgba(255,255,255,0.90)",
+            }}
           >
             Request access
           </button>
         </div>
 
-        <div className="bv-authBody">
-          {step === "email" && (
-            <div className="bv-step bv-step--in">
-              {activeMode === "create" ? (
-                <div className="bv-authFine" style={{ marginBottom: 10 }}>
-                  Fields marked with <span aria-hidden="true">*</span> are required.
-                </div>
-              ) : null}
+        {authMode === "signin" ? (
+          <>
+            <p className="bv-modal__sub" style={{ marginTop: 12 }}>
+              Private Preview is limited. Sign-in will unlock after onboarding. For now, request access and we’ll invite
+              you in batches.
+            </p>
 
-              {activeMode === "create" ? (
-                <>
-                  {/* Honeypot field (hidden from humans, attractive to bots) */}
-                  <div style={{ position: "absolute", left: -9999, top: -9999 }} aria-hidden="true">
-                    <label>
-                      Website
-                      <input
-                        type="text"
-                        tabIndex={-1}
-                        autoComplete="off"
-                        value={website}
-                        onChange={(e) => setWebsite(e.target.value)}
-                      />
-                    </label>
-                  </div>
+            <div className="bv-modal__actions" style={{ justifyContent: "space-between" }}>
+              <button type="button" className="bv-btn bv-btn--ghost" onClick={() => setAuthMode("create")}>
+                Request access instead
+              </button>
+              <button type="button" className="bv-btn" onClick={closeAndReset}>
+                Close
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            {!done ? (
+              <>
+                <p className="bv-modal__sub" style={{ marginTop: 12 }}>
+                  Private Preview is limited. Request access with your details—no password required.
+                </p>
 
-                  <div className="bv-grid2" style={{ gap: 12 }}>
-                    <label className="bv-field">
-                      <span className="bv-label">
-                        Full name <span aria-hidden="true">*</span>
-                      </span>
-                      <input
-                        className="bv-input"
-                        type="text"
-                        autoComplete="name"
-                        placeholder="Blocky Vault"
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        onBlur={markTouched}
-                        style={fullNameError ? { borderColor: "#ff6b6b" } : undefined}
-                        required
-                      />
-                      {fullNameError ? (
-                        <div className="bv-authFine" style={{ color: "#ff6b6b" }}>
-                          Full name is required.
-                        </div>
-                      ) : null}
-                    </label>
-
-                    <label className="bv-field">
-                      <span className="bv-label">Company</span>
-                      <input
-                        className="bv-input"
-                        type="text"
-                        autoComplete="organization"
-                        placeholder="Blocky Labs"
-                        value={company}
-                        onChange={(e) => setCompany(e.target.value)}
-                        onBlur={markTouched}
-                      />
-                    </label>
-
-                    <label className="bv-field" style={{ gridColumn: "1 / -1" }}>
-                      <span className="bv-label">
-                        Phone <span aria-hidden="true">*</span>
-                      </span>
-                      <input
-                        className="bv-input"
-                        type="tel"
-                        autoComplete="tel"
-                        placeholder="(787) 000-0000"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        onBlur={markTouched}
-                        style={phoneError ? { borderColor: "#ff6b6b" } : undefined}
-                        required
-                      />
-                      {phoneError ? (
-                        <div className="bv-authFine" style={{ color: "#ff6b6b" }}>
-                          Phone is required.
-                        </div>
-                      ) : null}
-                    </label>
-                  </div>
-                </>
-              ) : null}
-
-              <label className="bv-field" style={{ marginTop: activeMode === "create" ? 12 : 0 }}>
-                <span className="bv-label">
-                  Email {activeMode === "create" ? <span aria-hidden="true">*</span> : null}
-                </span>
-                <input
-                  className="bv-input"
-                  type="email"
-                  autoComplete="email"
-                  placeholder="you@company.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  onBlur={markTouched}
-                  style={emailError ? { borderColor: "#ff6b6b" } : undefined}
-                  required={activeMode === "create"}
-                />
-                {emailError ? (
-                  <div className="bv-authFine" style={{ color: "#ff6b6b" }}>
-                    Enter a valid email.
+                {err ? (
+                  <div className="bv-alert" role="alert" style={{ marginTop: 10 }}>
+                    {err}
                   </div>
                 ) : null}
-              </label>
 
-              {activeMode === "create" ? (
-                <>
-                  <label className="bv-checkRow" style={{ marginTop: 10 }}>
+                <form className="bv-modal__form" onSubmit={submitWaitlist} style={{ marginTop: 12 }}>
+                  {/* Honeypot */}
+                  <input
+                    type="text"
+                    name="hp"
+                    value={hp}
+                    onChange={(e) => setHp(e.target.value)}
+                    tabIndex={-1}
+                    autoComplete="off"
+                    style={{ position: "absolute", left: -9999, width: 1, height: 1, opacity: 0 }}
+                    aria-hidden="true"
+                  />
+
+                  {/* Grid row 1 */}
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: 12,
+                    }}
+                    className="bv-modal__grid2"
+                  >
+                    <label className="bv-field">
+                      <span>Full name *</span>
+                      <input
+                        type="text"
+                        name="fullName"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        required
+                        placeholder="Jane Doe"
+                      />
+                    </label>
+
+                    <label className="bv-field">
+                      <span>Company</span>
+                      <input
+                        type="text"
+                        name="company"
+                        value={company}
+                        onChange={(e) => setCompany(e.target.value)}
+                        placeholder="Blocky Labs"
+                      />
+                    </label>
+                  </div>
+
+                  {/* Grid row 2 */}
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: 12,
+                    }}
+                    className="bv-modal__grid2"
+                  >
+                    <label className="bv-field">
+                      <span>Phone *</span>
+                      <input
+                        type="tel"
+                        name="phone"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        required
+                        placeholder="(787) 555-1234"
+                      />
+                    </label>
+
+                    <label className="bv-field">
+                      <span>Account type</span>
+                      <select
+                        name="accountType"
+                        value={accountType}
+                        onChange={(e) => setAccountType(e.target.value as AccountType)}
+                      >
+                        <option value="individual">Individual</option>
+                        <option value="private_corp">Private corporation</option>
+                        <option value="government">Government</option>
+                      </select>
+                    </label>
+                  </div>
+
+                  <label className="bv-field">
+                    <span>Email *</span>
+                    <input
+                      type="email"
+                      name="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      placeholder="you@company.com"
+                    />
+                  </label>
+
+                  <label style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 4 }}>
                     <input
                       type="checkbox"
-                      checked={accepted}
-                      onChange={(e) => setAccepted(e.target.checked)}
-                      onBlur={markTouched}
+                      checked={agree}
+                      onChange={(e) => setAgree(e.target.checked)}
+                      style={{ width: 16, height: 16 }}
                     />
-                    <span>
-                      I agree to the <span className="bv-muted">Terms</span> and{" "}
-                      <span className="bv-muted">Privacy</span>.
+                    <span style={{ fontSize: 12, color: "rgba(255,255,255,0.75)" }}>
+                      I agree to the Terms and Privacy.
                     </span>
                   </label>
-                  {termsError ? (
-                    <div className="bv-authFine" style={{ color: "#ff6b6b", marginTop: 6 }}>
-                      You must accept Terms &amp; Privacy.
-                    </div>
-                  ) : null}
-                </>
-              ) : null}
 
-              {msg ? <div className="bv-authMsg">{msg}</div> : null}
-
-              <button
-                className="bv-btn bv-btn--primary bv-btnFull"
-                type="button"
-                disabled={!canContinue || loading}
-                onClick={goVerify}
-              >
-                {loading ? "Sending link…" : activeMode === "create" ? "Request early access" : "Continue"}
-              </button>
-
-              <div className="bv-authFine" style={{ marginTop: 10 }}>
-                {activeMode === "create"
-                  ? "Private Preview is limited. We onboard teams in batches."
-                  : "Passwordless by design: magic links reduce phishing & password reuse."}
-              </div>
-            </div>
-          )}
-
-          {step === "verify" && (
-            <div className="bv-step bv-step--in">
-              <div className="bv-verifyCard">
-                <div className="bv-verifyTop">
-                  <div className="bv-verifyDot" aria-hidden="true" />
-                  <div>
-                    <div className="bv-verifyTitle">
-                      {activeMode === "create" ? "Verification link sent" : "Sign-in link sent"}
-                    </div>
-                    <div className="bv-verifySub">{email.trim()}</div>
-                  </div>
-                </div>
-
-                {msg ? <div className="bv-authMsg">{msg}</div> : null}
-
-                <button className="bv-btn bv-btn--primary bv-btnFull" type="button" onClick={verified} disabled={loading}>
-                  {loading ? (activeMode === "create" ? "Submitting…" : "Verifying…") : "I verified"}
-                </button>
-
-                <div className="bv-verifyActions">
-                  <button type="button" className="bv-linkMini" onClick={back} disabled={loading}>
-                    Change details
+                  <button
+                    type="submit"
+                    className="bv-btn bv-btn--primary"
+                    disabled={!canSubmit}
+                    style={{
+                      width: "100%",
+                      height: 44,
+                      marginTop: 10,
+                      opacity: !canSubmit ? 0.6 : 1,
+                      cursor: !canSubmit ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    {submitting ? "Submitting..." : "Request early access"}
                   </button>
+
+                  <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10, gap: 12 }}>
+                    <button type="button" className="bv-btn bv-btn--ghost" onClick={closeAndReset}>
+                      Cancel
+                    </button>
+
+                    <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", alignSelf: "center" }}>
+                      We won’t sell your data.
+                    </div>
+                  </div>
+
                   <button
                     type="button"
-                    className="bv-linkMini"
-                    onClick={() => setMsg("Resent link (demo).")}
-                    disabled={loading}
+                    onClick={() => setAuthMode("signin")}
+                    className="bv-linkBtn"
+                    style={{
+                      marginTop: 6,
+                      textAlign: "left",
+                      fontSize: 12,
+                      color: "rgba(255,255,255,0.75)",
+                      textDecoration: "underline",
+                      background: "transparent",
+                      border: 0,
+                      padding: 0,
+                      cursor: "pointer",
+                    }}
                   >
-                    Resend link
+                    Already have access? Sign in
+                  </button>
+                </form>
+              </>
+            ) : (
+              <>
+                <p className="bv-modal__sub" style={{ marginTop: 14 }}>
+                  You’re on the list ✅ We’ll contact <strong>{email.trim().toLowerCase()}</strong> when onboarding
+                  opens.
+                </p>
+
+                <div className="bv-modal__actions" style={{ marginTop: 12 }}>
+                  <button type="button" className="bv-btn bv-btn--primary" onClick={closeAndReset}>
+                    Done
                   </button>
                 </div>
-              </div>
-            </div>
-          )}
-
-          {step === "done" && (
-            <div className="bv-step bv-step--in">
-              <div className="bv-done">
-                <div className="bv-doneIcon" aria-hidden="true">
-                  ✓
-                </div>
-                <div className="bv-doneTitle">{activeMode === "create" ? "Request submitted" : "Signed in"}</div>
-                <div className="bv-doneSub">
-                  {activeMode === "create"
-                    ? "You’re on the Private Preview waitlist. We’ll email you when your access is approved."
-                    : "Session ready for your vault experience."}
-                </div>
-
-                <button className="bv-btn bv-btn--primary bv-btnFull" type="button" onClick={closeAndReset}>
-                  Continue
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+              </>
+            )}
+          </>
+        )}
       </div>
+
+      {/* Small responsive helper */}
+      <style jsx>{`
+        @media (max-width: 720px) {
+          .bv-modal__grid2 {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

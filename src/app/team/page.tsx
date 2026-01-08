@@ -53,16 +53,18 @@ export default function TeamPage() {
           </div>
 
           <div className="bv-card card" style={{ marginTop: 16 }}>
-            <div className="bv-cardTitle">How to apply</div>
+            <div className="bv-cardTitle">Hiring status</div>
             <div className="bv-cardDesc">
-              Send a short message with: (1) what role you want, (2) links or experience, (3) why BlockyVault.
-              We’re small and selective—quality over quantity.
+              We’re currently focused on the BlockyVault Private Preview and not actively hiring. As we expand, we’ll
+              open a small number of carefully selected roles and publish them here.
             </div>
 
             <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <Link className="bv-btn bv-btn--primary" href="/contact">
-                Contact recruiting
-              </Link>
+              {/* Recruiting pausado: no manda a /contact ni a Neon */}
+              <button type="button" className="bv-btn bv-btn--primary" disabled>
+                Recruiting paused (Private Preview)
+              </button>
+
               <Link className="bv-btn" href="/about">
                 Read About
               </Link>

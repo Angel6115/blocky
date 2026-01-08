@@ -1,80 +1,132 @@
 import { NextResponse } from "next/server";
 import { neon } from "@neondatabase/serverless";
-import { cookies } from "next/headers";
 
 export const runtime = "nodejs";
 
-const COOKIE_NAME = "bv_admin";
-
-function jsonError(message: string, status = 400) {
-  return NextResponse.json({ ok: false, error: message }, { status });
-}
-
-async function isAuthed() {
-  const expected = process.env.ADMIN_SESSION_TOKEN || "";
-  const cookieStore = await cookies(); // ✅ IMPORTANT (cookies() is async)
-  const got = cookieStore.get(COOKIE_NAME)?.value || "";
-  return Boolean(expected) && got === expected;
-}
+type DbRow = {
+  id: string;
+  email: string;
+  company: string | null;
+  full_name: string | null;
+  phone: string | null;
+  source: string | null;
+  created_at: string;
+  approved_at: string | null;
+  account_type: string | null;
+};
 
 export async function GET(req: Request) {
   try {
-    // ✅ Hard auth check here (do NOT rely only on middleware)
-    if (!(await isAuthed())) return jsonError("Unauthorized", 401);
-
     if (!process.env.DATABASE_URL) {
-      return jsonError("DATABASE_URL missing. Check .env.local and restart dev server.", 500);
+      return NextResponse.json({ ok: false, error: "DATABASE_URL missing" }, { status: 500 });
     }
 
-    const { searchParams } = new URL(req.url);
-    const q = (searchParams.get("q") ?? "").trim().toLowerCase();
-    const limitRaw = Number(searchParams.get("limit") ?? "100");
-    const limit = Number.isFinite(limitRaw)
-      ? Math.min(Math.max(limitRaw, 1), 500)
-      : 100;
+    const url = new URL(req.url);
+    const searchParams = url.searchParams;
+
+    const q = (searchParams.get("q") ?? "").trim();
+    const accountTypeParam = (searchParams.get("accountType") ?? "").trim().toLowerCase();
+    const limitParam = searchParams.get("limit");
+
+    const limit = Math.min(Math.max(Number(limitParam || "100") || 100, 1), 500);
 
     const sql = neon(process.env.DATABASE_URL);
 
-    const rows =
-      q.length > 0
-        ? await sql`
-            select id, email, company, full_name, phone, source, created_at, approved_at
-            from waitlist
-            where
-              lower(email) like ${"%" + q + "%"}
-              or lower(coalesce(company, '')) like ${"%" + q + "%"}
-              or lower(coalesce(full_name, '')) like ${"%" + q + "%"}
-              or lower(coalesce(phone, '')) like ${"%" + q + "%"}
-            order by created_at desc
-            limit ${limit}
-          `
-        : await sql`
-            select id, email, company, full_name, phone, source, created_at, approved_at
-            from waitlist
-            order by created_at desc
-            limit ${limit}
-          `;
+    let rows: DbRow[] = [];
 
-    const data = (rows as any[]).map((r) => ({
-      id: String(r.id),
-      email: String(r.email),
-      company: r.company ?? null,
-      full_name: r.full_name ?? null,
-      phone: r.phone ?? null,
-      source: r.source ?? null,
-      created_at: r.created_at instanceof Date ? r.created_at.toISOString() : String(r.created_at),
-      approved_at: r.approved_at
-        ? r.approved_at instanceof Date
-          ? r.approved_at.toISOString()
-          : String(r.approved_at)
-        : null,
-    }));
+    const hasAccountFilter = accountTypeParam && accountTypeParam !== "all";
 
-    return NextResponse.json({ ok: true, data });
+    if (q) {
+      const like = `%${q}%`;
+
+      if (hasAccountFilter) {
+        const result = await sql`
+          select
+            id,
+            email,
+            company,
+            full_name,
+            phone,
+            source,
+            created_at,
+            approved_at,
+            account_type
+          from waitlist
+          where
+            account_type = ${accountTypeParam}
+            and (
+              email ilike ${like} or
+              coalesce(company, '') ilike ${like} or
+              coalesce(full_name, '') ilike ${like} or
+              coalesce(phone, '') ilike ${like}
+            )
+          order by created_at desc
+          limit ${limit}
+        `;
+        rows = result as unknown as DbRow[];
+      } else {
+        const result = await sql`
+          select
+            id,
+            email,
+            company,
+            full_name,
+            phone,
+            source,
+            created_at,
+            approved_at,
+            account_type
+          from waitlist
+          where
+            email ilike ${like} or
+            coalesce(company, '') ilike ${like} or
+            coalesce(full_name, '') ilike ${like} or
+            coalesce(phone, '') ilike ${like}
+          order by created_at desc
+          limit ${limit}
+        `;
+        rows = result as unknown as DbRow[];
+      }
+    } else if (hasAccountFilter) {
+      const result = await sql`
+        select
+          id,
+          email,
+          company,
+          full_name,
+          phone,
+          source,
+          created_at,
+          approved_at,
+          account_type
+        from waitlist
+        where account_type = ${accountTypeParam}
+        order by created_at desc
+        limit ${limit}
+      `;
+      rows = result as unknown as DbRow[];
+    } else {
+      const result = await sql`
+        select
+          id,
+          email,
+          company,
+          full_name,
+          phone,
+          source,
+          created_at,
+          approved_at,
+          account_type
+        from waitlist
+        order by created_at desc
+        limit ${limit}
+      `;
+      rows = result as unknown as DbRow[];
+    }
+
+    return NextResponse.json({ ok: true, data: rows });
   } catch (err: any) {
-    return NextResponse.json(
-      { ok: false, error: err?.message ?? "Server error" },
-      { status: 500 }
-    );
+    console.error("admin/waitlist error:", err);
+    return NextResponse.json({ ok: false, error: "Server error" }, { status: 500 });
   }
 }

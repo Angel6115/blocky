@@ -1,7 +1,13 @@
 // src/app/investors/page.tsx
+"use client";
+
 import Link from "next/link";
+import { useAuthModal } from "../components/auth/AuthModalProvider";
 
 export default function InvestorsPage() {
+  const { openAuthModal } = useAuthModal();
+  const handleEarlyAccess = () => openAuthModal();
+
   return (
     <main>
       <section className="bv-section">
@@ -73,12 +79,15 @@ export default function InvestorsPage() {
             </div>
 
             <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <Link className="bv-btn bv-btn--primary" href="/contact">
+              {/* ✅ Consistent funnel: open Neon modal */}
+              <button type="button" className="bv-btn bv-btn--primary" onClick={handleEarlyAccess}>
                 Request investor brief
-              </Link>
+              </button>
+
               <Link className="bv-btn" href="/about">
                 About
               </Link>
+
               <Link className="bv-btn bv-btn--ghost" href="/">
                 Back to Home
               </Link>

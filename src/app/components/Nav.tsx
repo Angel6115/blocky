@@ -1,3 +1,4 @@
+// src/app/components/Nav.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -64,7 +65,11 @@ export default function Nav() {
           <Link href="/about">About</Link>
           <Link href="/team">Team</Link>
           <Link href="/investors">Investors</Link>
-          <Link href="/contact">Contact</Link>
+
+          {/* ✅ Keep funnel: open Neon modal */}
+          <button type="button" className="bv-linkBtn" onClick={handleOpenAuth}>
+            Contact
+          </button>
         </nav>
 
         {/* Desktop actions */}
@@ -93,7 +98,7 @@ export default function Nav() {
 
       {/* Mobile drawer */}
       <div className={open ? "bv-drawer bv-drawer--open" : "bv-drawer"} hidden={!open}>
-      <div className="bv-drawer__panel">
+        <div className="bv-drawer__panel">
           <div className="bv-drawer__top">
             <span className="bv-drawer__title">Menu</span>
             <button type="button" className="bv-drawer__close" onClick={close} aria-label="Close menu">
@@ -102,29 +107,39 @@ export default function Nav() {
           </div>
 
           <div className="bv-drawer__links">
-            <Link href="/#why" onClick={close}>Why</Link>
-            <Link href="/#product" onClick={close}>Product</Link>
-            <Link href="/#pricing" onClick={close}>Pricing</Link>
-            <Link href="/#testimonials" onClick={close}>Testimonials</Link>
-            <Link href="/about" onClick={close}>About</Link>
-            <Link href="/team" onClick={close}>Team</Link>
-            <Link href="/investors" onClick={close}>Investors</Link>
-            <Link href="/contact" onClick={close}>Contact</Link>
+            <Link href="/#why" onClick={close}>
+              Why
+            </Link>
+            <Link href="/#product" onClick={close}>
+              Product
+            </Link>
+            <Link href="/#pricing" onClick={close}>
+              Pricing
+            </Link>
+            <Link href="/#testimonials" onClick={close}>
+              Testimonials
+            </Link>
+            <Link href="/about" onClick={close}>
+              About
+            </Link>
+            <Link href="/team" onClick={close}>
+              Team
+            </Link>
+            <Link href="/investors" onClick={close}>
+              Investors
+            </Link>
+
+            {/* ✅ Keep funnel: open Neon modal */}
+            <button type="button" className="bv-linkBtn" onClick={handleOpenAuth}>
+              Contact
+            </button>
           </div>
 
           <div className="bv-drawer__actions">
-            <button
-              type="button"
-              className="bv-btn bv-btn--ghost bv-btnFull"
-              onClick={handleOpenAuth}
-            >
+            <button type="button" className="bv-btn bv-btn--ghost bv-btnFull" onClick={handleOpenAuth}>
               Sign in
             </button>
-            <button
-              type="button"
-              className="bv-btn bv-btn--primary bv-btnFull"
-              onClick={handleOpenAuth}
-            >
+            <button type="button" className="bv-btn bv-btn--primary bv-btnFull" onClick={handleOpenAuth}>
               Request early access
             </button>
           </div>
