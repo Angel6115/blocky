@@ -2696,4 +2696,92 @@ img, svg{
     background: radial-gradient(1200px 600px at 80% 30%, rgba(255,122,0,0.10), transparent 40%),
                 rgba(12,12,14,0.92);
   }
-  
+  /* ==== BlockyVault splash intro ==== */
+
+.bv-splash-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none; /* no bloquea clicks cuando se está yendo */
+  background:
+    radial-gradient(circle at top, rgba(195, 144, 255, 0.18), transparent 55%),
+    radial-gradient(circle at bottom, rgba(255, 140, 74, 0.14), transparent 55%),
+    #02020a;
+  animation: bvSplashFadeOut 0.7s ease-out 2.3s forwards;
+}
+
+.bv-splash-inner {
+  max-width: min(320px, 70vw);
+  filter: drop-shadow(0 26px 70px rgba(0, 0, 0, 0.7));
+  animation: bvSplashFloat 2.2s ease-out forwards;
+}
+
+/* para la imagen del iPhone/logo */
+.bv-splash-inner img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 32px;
+}
+
+/* pequeño “float + zoom” del teléfono */
+@keyframes bvSplashFloat {
+  0% {
+    opacity: 0;
+    transform: translateY(40px) scale(0.9);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(0px) scale(1.04);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0px) scale(1);
+  }
+}
+
+/* desvanecer el fondo para dejar ver la página */
+@keyframes bvSplashFadeOut {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+@keyframes bv-splash-float {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-10px) scale(1);
+  }
+}
+@keyframes bv-splash-float {
+  0% {
+    opacity: 0;
+    transform: translateY(28px) scale(0.95);
+  }
+  25% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  75% {
+    opacity: 1;
+    transform: translateY(-4px) scale(1.01);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-10px) scale(1.02);
+  }
+}
