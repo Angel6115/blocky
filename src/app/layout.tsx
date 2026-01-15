@@ -1,6 +1,7 @@
 import React from "react";
 import "./globals.css";
 import AppShell from "./components/AppShell";
+import FaviconHead from "./components/FaviconHead";
 
 
 export const metadata = {
@@ -8,13 +9,6 @@ export const metadata = {
   description:
     "API infrastructure that turns 3-7 day manual document verification into 2-second calls. Built for healthcare insurers, government agencies, and universities. Blockchain-backed proof for audits and fraud prevention.",
   metadataBase: new URL("https://www.blockyvault.com"),
-  icons: {
-    icon: [
-      { url: '/favicon.svg', type: 'image/svg+xml' },
-      { url: '/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
-    ],
-    apple: '/apple-touch-icon.png',
-  },
   openGraph: {
     title: "BlockyVault — Verification Network for Insurers, Governments & Universities",
     description:
@@ -59,6 +53,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <FaviconHead />
+      </head>
       <body>
         <AppShell>{children}</AppShell>
       </body>
