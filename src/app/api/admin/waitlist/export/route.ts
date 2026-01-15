@@ -6,16 +6,19 @@ export const runtime = "nodejs";
 type DbRow = {
   id: string;
   email: string;
+  name: string;
   company: string | null;
-  full_name: string | null;
-  phone: string | null;
+  lead_type: "customer" | "investor" | "career" | null;
+  vertical: string | null;
+  volume: string | null;
+  ticket_size: string | null;
+  stage: string | null;
+  role: string | null;
   source: string | null;
   created_at: string;
   approved_at: string | null;
-  account_type: string | null;
 };
 
-// Fecha en formato: 2026-01-08 23:57:55
 function formatDate(iso: string | null | undefined): string {
   if (!iso) return "";
   const d = new Date(iso);
@@ -26,7 +29,6 @@ function formatDate(iso: string | null | undefined): string {
   )}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
-// Nombre de archivo: waitlist_2026-01-08_16-25.csv / .xlsx
 function buildFilename(ext: "csv" | "xlsx") {
   const d = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -36,7 +38,6 @@ function buildFilename(ext: "csv" | "xlsx") {
   return `waitlist_${ts}.${ext}`;
 }
 
-// Escapado simple para CSV
 function csvCell(value: unknown): string {
   const s = String(value ?? "");
   if (s.includes('"') || s.includes(",") || s.includes("\n") || s.includes("\r")) {
@@ -48,106 +49,81 @@ function csvCell(value: unknown): string {
 export async function GET(req: Request) {
   try {
     if (!process.env.DATABASE_URL) {
-      return NextResponse.json({ ok: false, error: "DATABASE_URL missing" }, { status: 500 });
+      return NextResponse.json(
+        { ok: false, error: "DATABASE_URL missing" },
+        { status: 500 }
+      );
     }
 
     const url = new URL(req.url);
     const searchParams = url.searchParams;
 
     const q = (searchParams.get("q") ?? "").trim();
-    const accountTypeParam = (searchParams.get("accountType") ?? "").trim().toLowerCase();
+    const leadTypeParam = (searchParams.get("leadType") ?? "").trim().toLowerCase();
     const limitParam = searchParams.get("limit");
     const formatParam = (searchParams.get("format") ?? "csv").trim().toLowerCase();
     const isXlsx = formatParam === "xlsx";
 
     const limit = Math.min(Math.max(Number(limitParam || "100") || 100, 1), 500);
-    const hasAccountFilter = !!accountTypeParam && accountTypeParam !== "all";
+    const hasLeadFilter = !!leadTypeParam && leadTypeParam !== "all";
 
     const sql: any = neon(process.env.DATABASE_URL);
     let rows: DbRow[] = [];
 
-    // ---------- Query base (mismas reglas que admin/waitlist normal) ----------
+    // Query lógica (igual que route.ts)
     if (q) {
       const like = `%${q}%`;
 
-      if (hasAccountFilter) {
+      if (hasLeadFilter) {
         rows = (await sql`
-          select
-            id,
-            email,
-            company,
-            full_name,
-            phone,
-            source,
-            created_at,
-            approved_at,
-            account_type
-          from waitlist
-          where
-            account_type = ${accountTypeParam}
-            and (
-              email ilike ${like} or
-              coalesce(company, '') ilike ${like} or
-              coalesce(full_name, '') ilike ${like} or
-              coalesce(phone, '') ilike ${like}
+          SELECT
+            id, email, name, company, lead_type, vertical, volume,
+            ticket_size, stage, role, source, created_at, approved_at
+          FROM waitlist
+          WHERE
+            lead_type = ${leadTypeParam}
+            AND (
+              email ILIKE ${like} OR
+              COALESCE(name, '') ILIKE ${like} OR
+              COALESCE(company, '') ILIKE ${like} OR
+              COALESCE(vertical, '') ILIKE ${like}
             )
-          order by created_at desc
-          limit ${limit}
+          ORDER BY created_at DESC
+          LIMIT ${limit}
         `) as DbRow[];
       } else {
         rows = (await sql`
-          select
-            id,
-            email,
-            company,
-            full_name,
-            phone,
-            source,
-            created_at,
-            approved_at,
-            account_type
-          from waitlist
-          where
-            email ilike ${like} or
-            coalesce(company, '') ilike ${like} or
-            coalesce(full_name, '') ilike ${like} or
-            coalesce(phone, '') ilike ${like}
-          order by created_at desc
-          limit ${limit}
+          SELECT
+            id, email, name, company, lead_type, vertical, volume,
+            ticket_size, stage, role, source, created_at, approved_at
+          FROM waitlist
+          WHERE
+            email ILIKE ${like} OR
+            COALESCE(name, '') ILIKE ${like} OR
+            COALESCE(company, '') ILIKE ${like} OR
+            COALESCE(vertical, '') ILIKE ${like}
+          ORDER BY created_at DESC
+          LIMIT ${limit}
         `) as DbRow[];
       }
-    } else if (hasAccountFilter) {
+    } else if (hasLeadFilter) {
       rows = (await sql`
-        select
-          id,
-          email,
-          company,
-          full_name,
-          phone,
-          source,
-          created_at,
-          approved_at,
-          account_type
-        from waitlist
-        where account_type = ${accountTypeParam}
-        order by created_at desc
-        limit ${limit}
+        SELECT
+          id, email, name, company, lead_type, vertical, volume,
+          ticket_size, stage, role, source, created_at, approved_at
+        FROM waitlist
+        WHERE lead_type = ${leadTypeParam}
+        ORDER BY created_at DESC
+        LIMIT ${limit}
       `) as DbRow[];
     } else {
       rows = (await sql`
-        select
-          id,
-          email,
-          company,
-          full_name,
-          phone,
-          source,
-          created_at,
-          approved_at,
-          account_type
-        from waitlist
-        order by created_at desc
-        limit ${limit}
+        SELECT
+          id, email, name, company, lead_type, vertical, volume,
+          ticket_size, stage, role, source, created_at, approved_at
+        FROM waitlist
+        ORDER BY created_at DESC
+        LIMIT ${limit}
       `) as DbRow[];
     }
 
@@ -160,10 +136,14 @@ export async function GET(req: Request) {
       sheet.columns = [
         { header: "id", key: "id", width: 36 },
         { header: "email", key: "email", width: 30 },
+        { header: "name", key: "name", width: 22 },
         { header: "company", key: "company", width: 18 },
-        { header: "full_name", key: "full_name", width: 22 },
-        { header: "phone", key: "phone", width: 16 },
-        { header: "account_type", key: "account_type", width: 16 },
+        { header: "lead_type", key: "lead_type", width: 14 },
+        { header: "vertical", key: "vertical", width: 16 },
+        { header: "volume", key: "volume", width: 20 },
+        { header: "ticket_size", key: "ticket_size", width: 16 },
+        { header: "stage", key: "stage", width: 16 },
+        { header: "role", key: "role", width: 20 },
         { header: "source", key: "source", width: 14 },
         { header: "created_at", key: "created_at", width: 22 },
         { header: "approved_at", key: "approved_at", width: 22 },
@@ -173,10 +153,14 @@ export async function GET(req: Request) {
         sheet.addRow({
           id: r.id,
           email: r.email,
+          name: r.name ?? "",
           company: r.company ?? "",
-          full_name: r.full_name ?? "",
-          phone: r.phone ?? "",
-          account_type: r.account_type ?? "",
+          lead_type: r.lead_type ?? "",
+          vertical: r.vertical ?? "",
+          volume: r.volume ?? "",
+          ticket_size: r.ticket_size ?? "",
+          stage: r.stage ?? "",
+          role: r.role ?? "",
           source: r.source ?? "",
           created_at: formatDate(r.created_at),
           approved_at: formatDate(r.approved_at),
@@ -206,10 +190,14 @@ export async function GET(req: Request) {
     const header = [
       "id",
       "email",
+      "name",
       "company",
-      "full_name",
-      "phone",
-      "account_type",
+      "lead_type",
+      "vertical",
+      "volume",
+      "ticket_size",
+      "stage",
+      "role",
       "source",
       "created_at",
       "approved_at",
@@ -222,10 +210,14 @@ export async function GET(req: Request) {
       const row = [
         r.id,
         r.email,
+        r.name ?? "",
         r.company ?? "",
-        r.full_name ?? "",
-        r.phone ?? "",
-        r.account_type ?? "",
+        r.lead_type ?? "",
+        r.vertical ?? "",
+        r.volume ?? "",
+        r.ticket_size ?? "",
+        r.stage ?? "",
+        r.role ?? "",
         r.source ?? "",
         formatDate(r.created_at),
         formatDate(r.approved_at),

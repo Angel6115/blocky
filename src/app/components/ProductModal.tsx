@@ -25,7 +25,7 @@ export default function ProductModal({
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
-      // opcional: trap focus mínimo (tab dentro del modal)
+      // trap focus
       if (e.key === "Tab" && panelRef.current) {
         const focusables = panelRef.current.querySelectorAll<HTMLElement>(
           'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])'
@@ -108,11 +108,11 @@ export default function ProductModal({
           </div>
 
           <div className="bv-modalCta">
-            <a className="bv-btn bv-btn--primary" href="#get-started" onClick={onClose}>
-              Get started
-            </a>
-            <a className="bv-btn" href="#security" onClick={onClose}>
-              See security details
+            <button type="button" className="bv-btn bv-btn--primary" onClick={onClose}>
+              Learn more in pilot call
+            </button>
+            <a className="bv-btn bv-btn--ghost" href="#pilots" onClick={onClose}>
+              See pilot details
             </a>
           </div>
 

@@ -7,8 +7,8 @@ type Props = {
 };
 
 export default function Why({
-  title = "Why BlockyVault",
-  subtitle = "Security should feel simple, not intimidating.",
+  title = "Why BlockyVault is different",
+  subtitle = "We're not a document storage platform. We're building the verification network that connects issuers with verifiers.",
 }: Props) {
   return (
     <section
@@ -56,16 +56,16 @@ export default function Why({
           }}
         >
           <Card
-            title="Built for clarity"
-            body="No clutter. No unnecessary features. Just a clean vault that helps you stay organized and in control."
+            title="API-First Network"
+            body="One API to verify documents from hundreds of issuers—no custom integrations, no phone calls. Connect once, access the entire network."
           />
           <Card
-            title="Security you can understand"
-            body="Strong protection without forcing you to think like a security engineer."
+            title="Cryptographic Proof"
+            body="Every verification generates a tamper-evident proof receipt—perfect for audits, compliance, and fraud investigations. Trust you can prove."
           />
           <Card
-            title="Designed to grow with you"
-            body="From personal use to teams — BlockyVault scales without changing who it’s for."
+            title="Network Effects"
+            body="As more universities and agencies join, every insurer and employer gets broader coverage from a single integration. The network becomes more valuable with each participant."
           />
         </div>
 

@@ -12,20 +12,20 @@ export default function Hero({ onRequestAccess }: Props) {
         <div className="bv-hero__copy">
           <div className="bv-pill">
             <span className="bv-pill__dot" />
-            <span>Private Preview — limited onboarding for teams</span>
+            <span>2026 Pilot Program — 10 slots for high-impact organizations</span>
           </div>
 
-          <h1 className="bv-h1">Verifiable security, built for humans.</h1>
+          <h1 className="bv-h1">Verification Network for Insurers, Governments, and Universities</h1>
 
           <p className="bv-lead">
-            BlockyVault is a modern vault for passwords, notes, keys, and files—designed to stay clean, fast, and
-            team-ready. We pair privacy-first encryption with proof-based security layers, so trust is something you can
-            verify—not just assume.
+            BlockyVault turns 3–7 day manual document checks into a 2-second API call. Verify insurance claims, 
+            government certificates, and academic credentials instantly—with cryptographic proof for audits and 
+            fraud investigations.
           </p>
 
           <div className="bv-cta">
             <button className="bv-btn bv-btn--primary" type="button" onClick={onRequestAccess}>
-              Request early access
+              Join 2026 pilot list
             </button>
             <a className="bv-btn" href="#why">
               See how it works
@@ -33,7 +33,8 @@ export default function Hero({ onRequestAccess }: Props) {
           </div>
 
           <div className="bv-sub">
-            Private Preview: join the waitlist to get early access, product updates, and priority onboarding as we expand.
+            Pre-launch: We&apos;re selecting 10 organizations with urgent verification pain in healthcare, government, 
+            or education. Priority for teams processing 1,000+ documents monthly.
           </div>
         </div>
 
@@ -43,7 +44,7 @@ export default function Hero({ onRequestAccess }: Props) {
           <div className="bv-heroPhoneWrap">
             <Image
               src="/brand/iphoneblocky.png"
-              alt="BlockyVault iPhone preview"
+              alt="BlockyVault verification API dashboard"
               width={640}
               height={640}
               priority
@@ -53,16 +54,16 @@ export default function Hero({ onRequestAccess }: Props) {
         </div>
       </div>
 
-      {/* Bottom “tagline strip” */}
+      {/* Bottom "tagline strip" */}
       <div className="bv-container">
         <div className="bv-strip card">
-          <span>Fast</span>
-          <span>Private</span>
-          <span>Readable</span>
-          <span>Verifiable</span>
-          <span>Team-ready</span>
-          <span>Minimal</span>
-          <span>Audit-friendly</span>
+          <span>API-first</span>
+          <span>2-second verification</span>
+          <span>Blockchain proof</span>
+          <span>Healthcare</span>
+          <span>Government</span>
+          <span>Universities</span>
+          <span>Audit-ready</span>
         </div>
       </div>
     </section>

@@ -1,46 +1,35 @@
 "use client";
 
 import React, { createContext, useCallback, useContext, useMemo, useState } from "react";
-import AuthModal from "../AuthModal";
-
-type AuthMode = "signin" | "create";
+import AuthModal from "./AuthModal";  // ← Ahora usa el modal optimizado en auth/
 
 type AuthModalContextValue = {
-  openAuthModal: (mode?: AuthMode) => void;
+  openAuthModal: () => void;
   closeAuthModal: () => void;
-  signedEmail: string;
 };
 
 const AuthModalContext = createContext<AuthModalContextValue | null>(null);
 
 export function AuthModalProvider({ children }: { children: React.ReactNode }) {
   const [authOpen, setAuthOpen] = useState(false);
-  const [authMode, setAuthMode] = useState<AuthMode>("create");
-  const [signedEmail, setSignedEmail] = useState<string>("");
 
-  const openAuthModal = useCallback((mode: AuthMode = "create") => {
-    setAuthMode(mode);
+  const openAuthModal = useCallback(() => {
     setAuthOpen(true);
   }, []);
 
   const closeAuthModal = useCallback(() => setAuthOpen(false), []);
 
   const value = useMemo(
-    () => ({ openAuthModal, closeAuthModal, signedEmail }),
-    [openAuthModal, closeAuthModal, signedEmail]
+    () => ({ openAuthModal, closeAuthModal }),
+    [openAuthModal, closeAuthModal]
   );
 
   return (
     <AuthModalContext.Provider value={value}>
       {children}
 
-      {/* 1 sola instancia global */}
-      <AuthModal
-        open={authOpen}
-        mode={authMode}
-        onClose={closeAuthModal}
-        onWaitlisted={(email) => setSignedEmail(email)}
-      />
+      {/* Modal optimizado (customer/investor/career) */}
+      <AuthModal open={authOpen} onClose={closeAuthModal} />
     </AuthModalContext.Provider>
   );
 }

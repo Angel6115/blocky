@@ -53,20 +53,19 @@ export default function Nav() {
           </span>
 
           <span className="bv-brand__word">BlockyVault</span>
-          <span className="bv-brand__tag">Private Preview</span>
+          <span className="bv-brand__tag">2026 Pilots</span>
         </Link>
 
         {/* Desktop links */}
         <nav className="bv-nav__links" aria-label="Primary navigation">
           <Link href="/#why">Why</Link>
-          <Link href="/#product">Product</Link>
-          <Link href="/#pricing">Pricing</Link>
-          <Link href="/#testimonials">Testimonials</Link>
+          <Link href="/#product">Use Cases</Link>
+          <Link href="/#pilots">Pilots</Link>
           <Link href="/about">About</Link>
           <Link href="/team">Team</Link>
           <Link href="/investors">Investors</Link>
 
-          {/* ✅ Keep funnel: open Neon modal */}
+          {/* ✅ Keep funnel: open modal */}
           <button type="button" className="bv-linkBtn" onClick={handleOpenAuth}>
             Contact
           </button>
@@ -74,11 +73,11 @@ export default function Nav() {
 
         {/* Desktop actions */}
         <div className="bv-nav__actions">
-          <button type="button" className="bv-btn bv-btn--ghost" onClick={handleOpenAuth}>
-            Sign in
-          </button>
+          <Link href="/investors" className="bv-btn bv-btn--ghost">
+            For Investors
+          </Link>
           <button type="button" className="bv-btn bv-btn--primary" onClick={handleOpenAuth}>
-            Request early access
+            Join pilot list
           </button>
         </div>
 
@@ -111,13 +110,10 @@ export default function Nav() {
               Why
             </Link>
             <Link href="/#product" onClick={close}>
-              Product
+              Use Cases
             </Link>
-            <Link href="/#pricing" onClick={close}>
-              Pricing
-            </Link>
-            <Link href="/#testimonials" onClick={close}>
-              Testimonials
+            <Link href="/#pilots" onClick={close}>
+              Pilots
             </Link>
             <Link href="/about" onClick={close}>
               About
@@ -129,18 +125,18 @@ export default function Nav() {
               Investors
             </Link>
 
-            {/* ✅ Keep funnel: open Neon modal */}
+            {/* ✅ Keep funnel: open modal */}
             <button type="button" className="bv-linkBtn" onClick={handleOpenAuth}>
               Contact
             </button>
           </div>
 
           <div className="bv-drawer__actions">
-            <button type="button" className="bv-btn bv-btn--ghost bv-btnFull" onClick={handleOpenAuth}>
-              Sign in
-            </button>
+            <Link href="/investors" className="bv-btn bv-btn--ghost bv-btnFull" onClick={close}>
+              For Investors
+            </Link>
             <button type="button" className="bv-btn bv-btn--primary bv-btnFull" onClick={handleOpenAuth}>
-              Request early access
+              Join pilot list
             </button>
           </div>
 
@@ -159,7 +155,7 @@ export default function Nav() {
         <div className="bv-container" style={{ paddingBottom: 10 }}>
           <div className="bv-strip card" style={{ justifyContent: "space-between" }}>
             <span>Signed in as {signedEmail}</span>
-            <span>Private Preview • Limited onboarding</span>
+            <span>2026 Pilot Program • 10 slots available</span>
           </div>
         </div>
       ) : null}

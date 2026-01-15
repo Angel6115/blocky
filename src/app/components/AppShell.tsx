@@ -47,7 +47,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 >
             <Image
               src="/brand/iphoneblocky.png" // 👈 ruta corregida (sin guion)
-              alt="BlockyVault mobile preview"
+              alt="BlockyVault verification API dashboard"
               fill
               priority
               sizes="360px"

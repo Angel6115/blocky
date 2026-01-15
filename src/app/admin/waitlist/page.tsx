@@ -5,13 +5,17 @@ import { useEffect, useMemo, useState } from "react";
 type Row = {
   id: string;
   email: string;
+  name: string;
   company: string | null;
-  full_name: string | null;
-  phone: string | null;
+  lead_type: "customer" | "investor" | "career" | null;
+  vertical: string | null;
+  volume: string | null;
+  ticket_size: string | null;
+  stage: string | null;
+  role: string | null;
   source: string | null;
-  created_at: string; // ISO string
-  approved_at: string | null; // ISO string | null
-  account_type: string | null;
+  created_at: string;
+  approved_at: string | null;
 };
 
 function formatDate(iso: string | null | undefined) {
@@ -38,19 +42,52 @@ function badgeStyle(approved: boolean): React.CSSProperties {
   };
 }
 
+function leadTypeBadge(leadType: string | null): React.CSSProperties {
+  const colors: Record<string, { bg: string; border: string; text: string }> = {
+    customer: {
+      bg: "rgba(26, 255, 168, 0.12)",
+      border: "rgba(26, 255, 168, 0.25)",
+      text: "rgba(210, 255, 238, 0.95)",
+    },
+    investor: {
+      bg: "rgba(255, 200, 0, 0.12)",
+      border: "rgba(255, 200, 0, 0.25)",
+      text: "rgba(255, 240, 180, 0.95)",
+    },
+    career: {
+      bg: "rgba(100, 150, 255, 0.12)",
+      border: "rgba(100, 150, 255, 0.25)",
+      text: "rgba(200, 220, 255, 0.95)",
+    },
+  };
+
+  const style = colors[leadType || ""] || {
+    bg: "rgba(255,255,255,0.06)",
+    border: "rgba(255,255,255,0.14)",
+    text: "rgba(255,255,255,0.75)",
+  };
+
+  return {
+    display: "inline-flex",
+    padding: "4px 10px",
+    borderRadius: 8,
+    fontSize: 12,
+    fontWeight: 700,
+    background: style.bg,
+    border: `1px solid ${style.border}`,
+    color: style.text,
+    textTransform: "capitalize",
+  };
+}
+
 const ui = {
-  // Match your site CTA vibe (orange)
   cta: "#FF8A3D",
   ctaHover: "#FF9C5B",
   ctaText: "#111111",
-
-  // Dark button (revoke)
   dangerBg: "rgba(255,255,255,0.06)",
   dangerBorder: "rgba(255,255,255,0.14)",
   dangerHover: "rgba(255,255,255,0.10)",
   dangerText: "rgba(255,255,255,0.90)",
-
-  // Neutral
   card: "rgba(10,10,14,0.35)",
   border: "rgba(255,255,255,0.10)",
   text: "rgba(255,255,255,0.92)",
@@ -104,19 +141,10 @@ function Button({
           if (disabled) return;
           e.currentTarget.style.background = ui.ctaHover;
           e.currentTarget.style.transform = "translateY(-1px)";
-          e.currentTarget.style.filter = "brightness(1.02)";
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.background = ui.cta;
           e.currentTarget.style.transform = "translateY(0px)";
-          e.currentTarget.style.filter = "none";
-        }}
-        onFocus={(e) => {
-          e.currentTarget.style.boxShadow =
-            "0 0 0 4px rgba(255,138,61,0.22), 0 10px 22px rgba(255,138,61,0.22)";
-        }}
-        onBlur={(e) => {
-          e.currentTarget.style.boxShadow = "0 10px 22px rgba(255,138,61,0.22)";
         }}
       >
         {children}
@@ -136,22 +164,13 @@ function Button({
           color: ui.dangerText,
           border: `1px solid ${ui.dangerBorder}`,
           boxShadow: "0 10px 20px rgba(0,0,0,0.25)",
-          backdropFilter: "blur(10px)",
         }}
         onMouseEnter={(e) => {
           if (disabled) return;
           e.currentTarget.style.background = ui.dangerHover;
-          e.currentTarget.style.transform = "translateY(-1px)";
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.background = ui.dangerBg;
-          e.currentTarget.style.transform = "translateY(0px)";
-        }}
-        onFocus={(e) => {
-          e.currentTarget.style.boxShadow = "0 0 0 4px rgba(255,255,255,0.14)";
-        }}
-        onBlur={(e) => {
-          e.currentTarget.style.boxShadow = "0 10px 20px rgba(0,0,0,0.25)";
         }}
       >
         {children}
@@ -159,7 +178,6 @@ function Button({
     );
   }
 
-  // ghost
   return (
     <button
       type="button"
@@ -170,7 +188,6 @@ function Button({
         background: "rgba(255,255,255,0.04)",
         color: "rgba(255,255,255,0.9)",
         border: "1px solid rgba(255,255,255,0.10)",
-        backdropFilter: "blur(10px)",
       }}
     >
       {children}
@@ -191,12 +208,12 @@ export default function AdminWaitlistPage() {
 
   const [q, setQ] = useState("");
   const [limit, setLimit] = useState(100);
-  const [accountType, setAccountType] = useState<"all" | "individual" | "private_corp" | "government">("all");
+  const [leadType, setLeadType] = useState<"all" | "customer" | "investor" | "career">("all");
 
   const [rowBusy, setRowBusy] = useState<Record<string, boolean>>({});
   const [toast, setToast] = useState<string | null>(null);
 
-  const queryKey = useMemo(() => `${q}::${limit}::${accountType}`, [q, limit, accountType]);
+  const queryKey = useMemo(() => `${q}::${limit}::${leadType}`, [q, limit, leadType]);
 
   async function load() {
     setLoading(true);
@@ -206,7 +223,7 @@ export default function AdminWaitlistPage() {
       const params = new URLSearchParams();
       if (q.trim()) params.set("q", q.trim());
       params.set("limit", String(limit));
-      if (accountType !== "all") params.set("accountType", accountType);
+      if (leadType !== "all") params.set("leadType", leadType);
 
       const res = await fetch(`/api/admin/waitlist?${params.toString()}`, { cache: "no-store" });
 
@@ -284,7 +301,7 @@ export default function AdminWaitlistPage() {
     const params = new URLSearchParams();
     if (q.trim()) params.set("q", q.trim());
     params.set("limit", String(limit));
-    if (accountType !== "all") params.set("accountType", accountType);
+    if (leadType !== "all") params.set("leadType", leadType);
     params.set("format", kind);
 
     const url = `/api/admin/waitlist/export?${params.toString()}`;
@@ -292,14 +309,7 @@ export default function AdminWaitlistPage() {
   }
 
   return (
-    <div
-      style={{
-        padding: "24px 16px 40px",
-        maxWidth: 1260,
-        margin: "0 auto",
-        color: ui.text,
-      }}
-    >
+    <div style={{ padding: "24px 16px 40px", maxWidth: 1260, margin: "0 auto", color: ui.text }}>
       {/* Header */}
       <div
         style={{
@@ -311,7 +321,7 @@ export default function AdminWaitlistPage() {
         }}
       >
         <div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Waitlist</h1>
+          <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Pilot Leads</h1>
           <div style={{ opacity: 0.75, marginTop: 6 }}>Admin view (protected).</div>
         </div>
 
@@ -321,7 +331,7 @@ export default function AdminWaitlistPage() {
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="email / name / phone / company"
+              placeholder="email / name / company / vertical"
               style={{
                 width: 260,
                 maxWidth: "min(260px, 90vw)",
@@ -356,10 +366,10 @@ export default function AdminWaitlistPage() {
           </div>
 
           <div>
-            <div style={{ fontSize: 12, opacity: 0.75, marginBottom: 6 }}>Account type</div>
+            <div style={{ fontSize: 12, opacity: 0.75, marginBottom: 6 }}>Lead type</div>
             <select
-              value={accountType}
-              onChange={(e) => setAccountType(e.target.value as any)}
+              value={leadType}
+              onChange={(e) => setLeadType(e.target.value as any)}
               style={{
                 width: 150,
                 padding: "10px 12px",
@@ -372,9 +382,9 @@ export default function AdminWaitlistPage() {
               }}
             >
               <option value="all">All</option>
-              <option value="individual">Individual</option>
-              <option value="private_corp">Private corp</option>
-              <option value="government">Government</option>
+              <option value="customer">Customer</option>
+              <option value="investor">Investor</option>
+              <option value="career">Career</option>
             </select>
           </div>
 
@@ -412,7 +422,6 @@ export default function AdminWaitlistPage() {
             border: "1px solid rgba(255,138,61,0.20)",
             fontWeight: 700,
             color: "rgba(255,255,255,0.92)",
-            backdropFilter: "blur(12px)",
           }}
         >
           {toast}
@@ -453,11 +462,11 @@ export default function AdminWaitlistPage() {
                     <tr style={{ background: "rgba(255,255,255,0.05)" }}>
                       <th style={th}>Created</th>
                       <th style={th}>Status</th>
+                      <th style={th}>Lead Type</th>
                       <th style={th}>Email</th>
-                      <th style={th}>Full name</th>
-                      <th style={th}>Phone</th>
-                      <th style={th}>Account type</th>
+                      <th style={th}>Name</th>
                       <th style={th}>Company</th>
+                      <th style={th}>Details</th>
                       <th style={th}>Source</th>
                       <th style={th}>Action</th>
                     </tr>
@@ -474,6 +483,16 @@ export default function AdminWaitlistPage() {
                       rows.map((r) => {
                         const approved = !!r.approved_at;
                         const busy = !!rowBusy[r.id];
+
+                        // Construir detalles según lead_type
+                        let details = "-";
+                        if (r.lead_type === "customer") {
+                          details = `${r.vertical || "?"} | ${r.volume || "volume N/A"}`;
+                        } else if (r.lead_type === "investor") {
+                          details = `${r.stage || "?"} | ${r.ticket_size || "ticket N/A"}`;
+                        } else if (r.lead_type === "career") {
+                          details = r.role || "role N/A";
+                        }
 
                         return (
                           <tr key={r.id} style={{ borderTop: `1px solid ${ui.border}` }}>
@@ -502,36 +521,27 @@ export default function AdminWaitlistPage() {
                             </td>
 
                             <td style={td}>
-                              <span
-                                style={{
-                                  fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
-                                }}
-                              >
+                              <span style={leadTypeBadge(r.lead_type)}>{r.lead_type || "?"}</span>
+                            </td>
+
+                            <td style={td}>
+                              <span style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}>
                                 {r.email}
                               </span>
                             </td>
 
-                            <td style={td}>{r.full_name ?? "-"}</td>
-                            <td style={td}>{r.phone ?? "-"}</td>
-                            <td style={td}>{r.account_type ?? "-"}</td>
+                            <td style={td}>{r.name ?? "-"}</td>
                             <td style={td}>{r.company ?? "-"}</td>
+                            <td style={td}>{details}</td>
                             <td style={td}>{r.source ?? "-"}</td>
 
                             <td style={td}>
                               {approved ? (
-                                <Button
-                                  variant="revoke"
-                                  disabled={busy}
-                                  onClick={() => setApproved(r.email, false, r.id)}
-                                >
+                                <Button variant="revoke" disabled={busy} onClick={() => setApproved(r.email, false, r.id)}>
                                   {busy ? "Working…" : "Revoke"}
                                 </Button>
                               ) : (
-                                <Button
-                                  variant="approve"
-                                  disabled={busy}
-                                  onClick={() => setApproved(r.email, true, r.id)}
-                                >
+                                <Button variant="approve" disabled={busy} onClick={() => setApproved(r.email, true, r.id)}>
                                   {busy ? "Approving…" : "Approve"}
                                 </Button>
                               )}
@@ -548,14 +558,7 @@ export default function AdminWaitlistPage() {
             {/* Mobile cards */}
             <div className="bv-admin-waitlist-table-mobile">
               {rows.length === 0 ? (
-                <div
-                  style={{
-                    padding: 14,
-                    borderRadius: 14,
-                    background: ui.card,
-                    border: `1px solid ${ui.border}`,
-                  }}
-                >
+                <div style={{ padding: 14, borderRadius: 14, background: ui.card, border: `1px solid ${ui.border}` }}>
                   No rows found.
                 </div>
               ) : (
@@ -563,6 +566,15 @@ export default function AdminWaitlistPage() {
                   {rows.map((r) => {
                     const approved = !!r.approved_at;
                     const busy = !!rowBusy[r.id];
+
+                    let details = "-";
+                    if (r.lead_type === "customer") {
+                      details = `${r.vertical || "?"} | ${r.volume || "volume N/A"}`;
+                    } else if (r.lead_type === "investor") {
+                      details = `${r.stage || "?"} | ${r.ticket_size || "ticket N/A"}`;
+                    } else if (r.lead_type === "career") {
+                      details = r.role || "role N/A";
+                    }
 
                     return (
                       <div
@@ -585,7 +597,7 @@ export default function AdminWaitlistPage() {
                             gap: 8,
                           }}
                         >
-                          <div style={{ fontWeight: 700, fontSize: 14 }}>{r.full_name ?? r.email}</div>
+                          <div style={{ fontWeight: 700, fontSize: 14 }}>{r.name ?? r.email}</div>
                           <span style={badgeStyle(approved)}>
                             <span
                               aria-hidden="true"
@@ -603,28 +615,24 @@ export default function AdminWaitlistPage() {
 
                         <div style={{ fontSize: 12, opacity: 0.75 }}>{formatDate(r.created_at)}</div>
 
+                        <div style={{ marginTop: 4 }}>
+                          <span style={leadTypeBadge(r.lead_type)}>{r.lead_type || "?"}</span>
+                        </div>
+
                         <div style={{ fontSize: 13, marginTop: 4, display: "grid", rowGap: 4 }}>
                           <div>
                             <span style={{ opacity: 0.7 }}>Email: </span>
-                            <span
-                              style={{
-                                fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
-                              }}
-                            >
+                            <span style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}>
                               {r.email}
                             </span>
                           </div>
                           <div>
-                            <span style={{ opacity: 0.7 }}>Phone: </span>
-                            <span>{r.phone ?? "-"}</span>
-                          </div>
-                          <div>
-                            <span style={{ opacity: 0.7 }}>Account: </span>
-                            <span>{r.account_type ?? "-"}</span>
-                          </div>
-                          <div>
                             <span style={{ opacity: 0.7 }}>Company: </span>
                             <span>{r.company ?? "-"}</span>
+                          </div>
+                          <div>
+                            <span style={{ opacity: 0.7 }}>Details: </span>
+                            <span>{details}</span>
                           </div>
                           <div>
                             <span style={{ opacity: 0.7 }}>Source: </span>
@@ -638,27 +646,13 @@ export default function AdminWaitlistPage() {
                           )}
                         </div>
 
-                        <div
-                          style={{
-                            marginTop: 8,
-                            display: "flex",
-                            justifyContent: "flex-end",
-                          }}
-                        >
+                        <div style={{ marginTop: 8, display: "flex", justifyContent: "flex-end" }}>
                           {approved ? (
-                            <Button
-                              variant="revoke"
-                              disabled={busy}
-                              onClick={() => setApproved(r.email, false, r.id)}
-                            >
+                            <Button variant="revoke" disabled={busy} onClick={() => setApproved(r.email, false, r.id)}>
                               {busy ? "Working…" : "Revoke"}
                             </Button>
                           ) : (
-                            <Button
-                              variant="approve"
-                              disabled={busy}
-                              onClick={() => setApproved(r.email, true, r.id)}
-                            >
+                            <Button variant="approve" disabled={busy} onClick={() => setApproved(r.email, true, r.id)}>
                               {busy ? "Approving…" : "Approve"}
                             </Button>
                           )}
