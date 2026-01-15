@@ -10,13 +10,11 @@ export const metadata = {
   metadataBase: new URL("https://www.blockyvault.com"),
   icons: {
     icon: [
-      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon.svg', type: 'image/svg+xml' },
       { url: '/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
     ],
     apple: '/apple-touch-icon.png',
-    shortcut: '/favicon.ico',
   },
-  manifest: '/site.webmanifest',
   openGraph: {
     title: "BlockyVault — Verification Network for Insurers, Governments & Universities",
     description:
